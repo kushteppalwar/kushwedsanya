@@ -12,8 +12,8 @@
     "partner2City": "Pune"
   },
   "journey": {
-    "from": { "person": "Kush", "city": "Pune", "state": "Maharashtra", "lat": 18.5204, "lon": 73.8567 },
-    "to": { "person": "Sanya", "city": "Delhi", "state": "Delhi", "lat": 28.6139, "lon": 77.209 }
+    "from": { "person": "Kush", "city": "Pune", "state": "Maharashtra", "code": "PNQ", "lat": 18.5204, "lon": 73.8567 },
+    "to": { "person": "Sanya", "city": "Delhi", "state": "Delhi", "code": "DEL", "lat": 28.6139, "lon": 77.209 }
   },
   "weddingDate": {
     "display": "December 23 – 24, 2026",

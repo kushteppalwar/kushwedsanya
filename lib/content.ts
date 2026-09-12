@@ -25,6 +25,8 @@ export interface JourneyStop {
   person: string;
   city: string;
   state: string;
+  /** Airport code, shown on travel-document styled versions. */
+  code?: string;
   lat: number;
   lon: number;
 }

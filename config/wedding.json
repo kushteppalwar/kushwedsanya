@@ -11,6 +11,10 @@
     "partner1City": "Delhi",
     "partner2City": "Pune"
   },
+  "journey": {
+    "from": { "person": "Kush", "city": "Pune", "state": "Maharashtra", "lat": 18.5204, "lon": 73.8567 },
+    "to": { "person": "Sanya", "city": "Delhi", "state": "Delhi", "lat": 28.6139, "lon": 77.209 }
+  },
   "weddingDate": {
     "display": "December 23 – 24, 2026",
     "startDay": "23",

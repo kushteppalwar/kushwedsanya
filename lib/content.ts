@@ -21,9 +21,21 @@ export interface EventLocation {
   country: string;
 }
 
+export interface JourneyStop {
+  person: string;
+  city: string;
+  state: string;
+  lat: number;
+  lon: number;
+}
+
 export interface EventConfig {
   eventName: string;
   hashtag?: string;
+  journey?: {
+    from: JourneyStop;
+    to: JourneyStop;
+  };
   invitation?: {
     intro: string;
     request: string;

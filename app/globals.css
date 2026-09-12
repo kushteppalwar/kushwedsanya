@@ -118,6 +118,83 @@ body {
   will-change: transform;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   Journey theme (versions 3 & 4) — tokens the sections read via
+   bg-(--jm-*) / text-(--jm-*) so one set of components serves both palettes
+   ═══════════════════════════════════════════════════════════════════ */
+.journey-day {
+  --jm-bg: #f3ecdd;
+  --jm-bg-deep: #e7dcc3;
+  --jm-ink: #1f2a44;
+  --jm-muted: #6f6b60;
+  --jm-accent: #c8553d;
+  --jm-gold: #b8923f;
+  --jm-line: rgba(31, 42, 68, 0.14);
+  --jm-card: rgba(255, 252, 245, 0.75);
+}
+
+.journey-night {
+  --jm-bg: #0b1020;
+  --jm-bg-deep: #070b17;
+  --jm-ink: #ece6d6;
+  --jm-muted: #9aa0b4;
+  --jm-accent: #f2b544;
+  --jm-gold: #d9b56a;
+  --jm-line: rgba(236, 230, 214, 0.14);
+  --jm-card: rgba(255, 255, 255, 0.05);
+}
+
+/* Old-paper fibre on the day map */
+.map-paper {
+  background-image:
+    radial-gradient(ellipse at 20% 15%, rgba(200, 85, 61, 0.06), transparent 45%),
+    radial-gradient(ellipse at 80% 85%, rgba(184, 146, 63, 0.1), transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.28 0 0 0 0 0.15 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+}
+
+/* The route draws itself in, then the marker travels it */
+.route-draw {
+  stroke-dasharray: 8 10;
+  animation: route-draw 2.4s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes route-draw {
+  from {
+    stroke-dashoffset: var(--route-length, 2000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pin-pulse {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: pin-pulse 2.6s ease-out infinite;
+}
+
+@keyframes pin-pulse {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .pin-pulse {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 /* Double-ruled invitation card frame */
 .card-frame {
   position: relative;

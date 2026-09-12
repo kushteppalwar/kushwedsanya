@@ -1,26 +1,281 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-cream: #1a1510;
+  --color-ivory: #241e16;
+  --color-champagne: #3d3226;
+  --color-gold: #c9a227;
+  --color-gold-light: #d4af37;
+  --color-gold-dark: #a68a1f;
+  --color-burgundy: #8b0000;
+  --color-burgundy-deep: #5c0000;
+  --color-warm-gray: #a89985;
+  --color-warm-gray-light: #c4b5a0;
+  --color-charcoal: #f5f0e8;
+  --color-scroll-bg: #1c1712;
+
+  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-sans: "Cormorant Garamond", Garamond, "Times New Roman", serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-scroll-bg);
+  color: var(--color-charcoal);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: rgba(201, 162, 39, 0.85);
+  color: #1a1510;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Scroll Section — cinematic scene background
+   ═══════════════════════════════════════════════════════════════════ */
+.scroll-section {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(60, 50, 40, 0.35) 0%, transparent 60%),
+    radial-gradient(ellipse at 30% 70%, rgba(80, 60, 30, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(70, 50, 25, 0.10) 0%, transparent 45%),
+    linear-gradient(180deg, #080604 0%, #0f0d0a 20%, #14120e 50%, #0f0d0a 80%, #080604 100%);
+}
+
+.bg-scroll-bg {
+  background-color: #1c1712;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Parchment textures — noise-based SVG backgrounds
+   ═══════════════════════════════════════════════════════════════════ */
+.parchment-texture {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+.parchment-bg-texture {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.015' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Scroll text — ink on parchment effect
+   ═══════════════════════════════════════════════════════════════════ */
+.scroll-text {
+  text-shadow:
+    1px 1px 1px rgba(120, 80, 40, 0.18),
+    0 0 25px rgba(201, 162, 39, 0.08),
+    0 0 60px rgba(180, 140, 80, 0.04);
+}
+
+.ancient-text {
+  text-shadow: 1px 1px 2px rgba(120, 53, 15, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Wood grain textures
+   ═══════════════════════════════════════════════════════════════════ */
+.wood-grain {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.1) 2px,
+    rgba(0, 0, 0, 0.1) 4px
+  ),
+  repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 8px,
+    rgba(139, 69, 19, 0.15) 8px,
+    rgba(139, 69, 19, 0.15) 10px
+  );
+}
+
+.wood-grain-enhanced {
+  background-image:
+    repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0, 0, 0, 0.05) 1px, rgba(0, 0, 0, 0.05) 2px),
+    repeating-linear-gradient(0deg, transparent, transparent 6px, rgba(139, 69, 19, 0.1) 6px, rgba(139, 69, 19, 0.1) 8px),
+    repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(100, 50, 10, 0.08) 20px, rgba(100, 50, 10, 0.08) 22px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Shadow and depth helpers
+   ═══════════════════════════════════════════════════════════════════ */
+.wooden-roll {
+  box-shadow:
+    0 4px 8px -2px rgba(0, 0, 0, 0.5),
+    0 2px 4px -1px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.parchment-body {
+  box-shadow:
+    4px 0 8px -2px rgba(0, 0, 0, 0.3),
+    -4px 0 8px -2px rgba(0, 0, 0, 0.3);
+}
+
+.stick-shadow {
+  filter:
+    drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4))
+    drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.wax-seal {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+.knot {
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+}
+
+.rope-svg {
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.parchment-edge-left {
+  box-shadow: inset 8px 0 16px -8px rgba(139, 90, 43, 0.4);
+}
+
+.parchment-edge-right {
+  box-shadow: inset -8px 0 16px -8px rgba(139, 90, 43, 0.4);
+}
+
+.vignette {
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+.bg-gradient-radial {
+  background: radial-gradient(circle at center, var(--tw-gradient-from), var(--tw-gradient-to));
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Cinematic content band reveal — blur-to-sharp transition
+   ═══════════════════════════════════════════════════════════════════ */
+.content-band {
+  will-change: opacity, transform, filter;
+  backface-visibility: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Seal, rope, and atmosphere animations
+   ═══════════════════════════════════════════════════════════════════ */
+.string-texture {
+  animation: string-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes string-shimmer {
+  0%, 100% { stroke-dashoffset: 0; }
+  50% { stroke-dashoffset: 6; }
+}
+
+@keyframes rope-swing {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+.rope-swing {
+  animation: rope-swing 4s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+@keyframes seal-crack {
+  0% { clip-path: polygon(50% 0%, 50% 0%, 50% 100%, 50% 100%); }
+  100% { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Ambient effects
+   ═══════════════════════════════════════════════════════════════════ */
+.dust-particles {
+  background-image:
+    radial-gradient(circle, rgba(201, 162, 39, 0.08) 1px, transparent 1px),
+    radial-gradient(circle, rgba(180, 140, 80, 0.05) 1px, transparent 1px);
+  background-size: 80px 80px, 120px 120px;
+  background-position: 0 0, 40px 40px;
+  animation: float-dust 25s linear infinite;
+}
+
+@keyframes float-dust {
+  0%   { transform: translateY(0) translateX(0); }
+  25%  { transform: translateY(-15px) translateX(8px); }
+  50%  { transform: translateY(-5px) translateX(-5px); }
+  75%  { transform: translateY(-20px) translateX(12px); }
+  100% { transform: translateY(0) translateX(0); }
+}
+
+.ambient-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(201, 162, 39, 0.6) 0%, transparent 70%);
+}
+
+@keyframes subtle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes gentle-glow {
+  0%, 100% { opacity: 0.3; filter: blur(40px); }
+  50% { opacity: 0.5; filter: blur(50px); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.scroll-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(201, 162, 39, 0.1) 25%,
+    rgba(201, 162, 39, 0.2) 50%,
+    rgba(201, 162, 39, 0.1) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Cinematic atmosphere — depth haze behind the scroll
+   ═══════════════════════════════════════════════════════════════════ */
+.scene-depth-haze {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 50%, rgba(180, 140, 80, 0.05) 0%, transparent 100%);
+  filter: blur(30px);
+  mix-blend-mode: screen;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Parchment unfurl mask
+   ═══════════════════════════════════════════════════════════════════ */
+.parchment-mask {
+  mask-image: linear-gradient(to bottom, black 0%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 90%, transparent 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Reduced motion — graceful fallback
+   ═══════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .string-texture,
+  .dust-particles,
+  .scroll-shimmer,
+  .rope-swing {
+    animation: none;
+  }
+
+  .content-band {
+    will-change: auto;
+  }
 }

@@ -1,0 +1,25 @@
+{
+  "couple": {
+    "partner1": "Sanya",
+    "partner2": "Kush",
+    "partner1City": "Delhi",
+    "partner2City": "Pune"
+  },
+  "weddingDate": {
+    "display": "December 28, 2026",
+    "startDay": "28",
+    "month": "December",
+    "year": "2026",
+    "dayOfWeek": "Monday",
+    "tagline": "Save the Date"
+  },
+  "location": {
+    "city": "Pune",
+    "state": "Maharashtra",
+    "country": "India"
+  },
+  "closing": {
+    "message": "Formal invitations with the full schedule, dress code, and venue details will follow soon.",
+    "signoff": "We can't wait to celebrate with you!"
+  }
+}

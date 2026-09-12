@@ -1,11 +1,14 @@
 "use client";
 
-import { useRef, useEffect, useLayoutEffect } from "react";
+import { useRef, useEffect, useLayoutEffect, useCallback, forwardRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import type { ScheduleDay } from "@/lib/content";
 
 gsap.registerPlugin(ScrollTrigger);
+// Mobile browsers resize the viewport as the address bar collapses mid-scroll;
+// without this the pinned section would re-measure and jump on every toggle.
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 const UNROLL_START = 0.18;
 const UNROLL_END = 0.92;
@@ -43,14 +46,16 @@ function Ornament({ flip = false }: { flip?: boolean }) {
   );
 }
 
-function Roll({ position }: { position: "top" | "bottom" }) {
-  return (
-    <div className={`scroll-roll scroll-roll--${position}`}>
-      <span className="scroll-roll__cap scroll-roll__cap--left" />
-      <span className="scroll-roll__cap scroll-roll__cap--right" />
-    </div>
-  );
-}
+const Roll = forwardRef<HTMLDivElement, { position: "top" | "bottom" }>(
+  function Roll({ position }, ref) {
+    return (
+      <div ref={ref} className={`scroll-roll scroll-roll--${position}`}>
+        <span className="scroll-roll__cap scroll-roll__cap--left" />
+        <span className="scroll-roll__cap scroll-roll__cap--right" />
+      </div>
+    );
+  }
+);
 
 export default function AncientScroll({
   tagline,
@@ -67,27 +72,63 @@ export default function AncientScroll({
   const sealRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
+  const assemblyRef = useRef<HTMLDivElement>(null);
+  const topRollRef = useRef<HTMLDivElement>(null);
 
   // Kept in a ref, not state: the ScrollTrigger must be built once and never
   // torn down, since recreating it mid-scroll recomputes a wrong start offset.
   const paperHeightRef = useRef(0);
+  const refreshTimerRef = useRef(0);
+
+  // Coalesces bursts of resize notifications into one refresh, outside the
+  // ResizeObserver callback so the refresh's own layout work can't feed back
+  // into it. A timeout rather than requestAnimationFrame so the initial
+  // refresh still runs when the page is opened in a background tab.
+  const scheduleRefresh = useCallback(() => {
+    if (refreshTimerRef.current) return;
+    refreshTimerRef.current = window.setTimeout(() => {
+      refreshTimerRef.current = 0;
+      ScrollTrigger.refresh();
+    }, 0);
+  }, []);
+
+  // offsetHeight ignores the --fit transform, so every measurement here stays
+  // in unscaled space and the unroll math is unaffected by the scaling.
+  const measure = useCallback(() => {
+    const section = sectionRef.current;
+    const sheet = sheetRef.current;
+    const roll = topRollRef.current;
+    const assembly = assemblyRef.current;
+    if (!section || !sheet || !roll || !assembly) return;
+
+    const naturalHeight = sheet.offsetHeight + roll.offsetHeight * 2;
+    const fit = Math.min(1, (section.clientHeight * 0.94) / naturalHeight);
+    assembly.style.setProperty("--fit", fit.toFixed(4));
+
+    if (sheet.offsetHeight === paperHeightRef.current) return;
+    paperHeightRef.current = sheet.offsetHeight;
+    scheduleRefresh();
+  }, [scheduleRefresh]);
 
   useLayoutEffect(() => {
+    const section = sectionRef.current;
     const sheet = sheetRef.current;
-    if (!sheet) return;
+    if (!section || !sheet) return;
 
-    const measure = () => {
-      const height = sheet.offsetHeight;
-      if (height === paperHeightRef.current) return;
-      paperHeightRef.current = height;
-      ScrollTrigger.refresh();
-    };
     measure();
 
+    // The section tracks the viewport, so observing it covers resizes and
+    // orientation changes; the sheet covers content reflow such as font loads.
     const observer = new ResizeObserver(measure);
+    observer.observe(section);
     observer.observe(sheet);
-    return () => observer.disconnect();
-  }, []);
+
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = 0;
+    };
+  }, [measure]);
 
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -97,6 +138,10 @@ export default function AncientScroll({
       gsap.set([sealRef.current, glowRef.current, hintRef.current], { opacity: 0 });
       return;
     }
+
+    // A reload restores the previous scroll position, which would build the
+    // pinned trigger from a mid-scroll offset. The scroll always starts closed.
+    window.scrollTo(0, 0);
 
     const ctx = gsap.context(() => {
       gsap.set(windowRef.current, { height: 0 });
@@ -136,15 +181,12 @@ export default function AncientScroll({
         .to(sealRef.current, { rotation: 0, duration: 0.015 }, 0.085)
         .to(sealRef.current, { scale: 1.5, opacity: 0, duration: 0.05 }, 0.1)
         .to(glowRef.current, { opacity: 0, scale: 2.2, duration: 0.06 }, 0.12);
-
-      ScrollTrigger.refresh();
     }, sectionRef);
 
-    // Fonts landing after hydration reflow the sheet; remeasure once they do.
-    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+    scheduleRefresh();
 
     return () => ctx.revert();
-  }, []);
+  }, [scheduleRefresh]);
 
   return (
     <section
@@ -170,96 +212,103 @@ export default function AncientScroll({
 
       {/* Fixed-size stage: the assembly grows inside it without resizing the pinned section */}
       <div className="absolute inset-0 z-20 flex items-center justify-center">
-        <div className="flex w-[min(34rem,92vw)] flex-col items-stretch">
-          <Roll position="top" />
+        <div
+          ref={assemblyRef}
+          className="scroll-assembly flex w-[min(34rem,92vw)] flex-col items-stretch [--roll-h:clamp(1.6rem,5.5vw,2.6rem)] short:w-[min(56rem,94vw)] short:[--roll-h:clamp(1.4rem,5vh,2.2rem)]"
+        >
+          <Roll ref={topRollRef} position="top" />
 
           <div ref={windowRef} className="scroll-window relative overflow-hidden">
             <div ref={sheetRef} className="scroll-sheet absolute inset-x-0 top-0">
-            <div className="parchment-texture pointer-events-none absolute inset-0 opacity-[0.35]" />
+              <div className="parchment-texture pointer-events-none absolute inset-0 opacity-[0.35]" />
 
-            <div className="relative flex flex-col items-center px-7 py-9 text-center sm:px-10">
-              <Ornament />
+              <div className="relative flex flex-col items-center px-6 py-7 text-center sm:px-10 sm:py-9 short:flex-row short:items-center short:gap-10 short:px-12 short:py-6">
+                <div className="flex flex-col items-center short:flex-1">
+                  <Ornament />
 
-              <p className="mt-5 font-serif text-[0.7rem] tracking-[0.42em] text-amber-800/80 uppercase sm:text-xs">
-                {tagline}
-              </p>
+                  <p className="mt-5 font-serif text-[0.7rem] tracking-[0.42em] text-amber-800/80 uppercase sm:text-xs">
+                    {tagline}
+                  </p>
 
-              <h1 className="ancient-text mt-4 font-serif text-[clamp(1.9rem,6vw,2.9rem)] leading-tight font-light tracking-wide text-amber-950">
-                {partner1}
-              </h1>
+                  <h1 className="ancient-text mt-4 font-serif text-[clamp(1.9rem,6vw,2.9rem)] leading-tight font-light tracking-wide text-amber-950 short:text-[2.6rem]">
+                    {partner1}
+                  </h1>
 
-              <div className="my-1.5 flex items-center gap-3">
-                <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-700/40" />
-                <span className="font-serif text-xl italic text-amber-700">&amp;</span>
-                <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-700/40" />
-              </div>
+                  <div className="my-1.5 flex items-center gap-3">
+                    <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-700/40" />
+                    <span className="font-serif text-xl italic text-amber-700">&amp;</span>
+                    <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-700/40" />
+                  </div>
 
-              <h1 className="ancient-text font-serif text-[clamp(1.9rem,6vw,2.9rem)] leading-tight font-light tracking-wide text-amber-950">
-                {partner2}
-              </h1>
+                  <h1 className="ancient-text font-serif text-[clamp(1.9rem,6vw,2.9rem)] leading-tight font-light tracking-wide text-amber-950 short:text-[2.6rem]">
+                    {partner2}
+                  </h1>
 
-              <p className="mt-5 border-y border-amber-700/30 px-6 py-2 font-serif text-[clamp(0.85rem,2.6vw,1.05rem)] tracking-[0.1em] text-amber-900">
-                {dateDisplay}
-              </p>
-
-              {schedule && schedule.length > 0 && (
-                <div className="mt-6 w-full max-w-[22rem] space-y-4">
-                  {schedule.map((day) => (
-                    <div key={day.day}>
-                      <div className="mb-2 flex items-center justify-center gap-2.5">
-                        <span className="h-px flex-1 bg-amber-700/25" />
-                        <span className="font-serif text-[0.62rem] tracking-[0.3em] text-amber-800/85 uppercase whitespace-nowrap">
-                          {day.day}
-                          {day.date && ` · ${day.date}`}
-                        </span>
-                        <span className="h-px flex-1 bg-amber-700/25" />
-                      </div>
-
-                      <ul className="space-y-1">
-                        {day.events.map((event) => (
-                          <li
-                            key={event.name}
-                            className="flex items-baseline gap-2 font-serif text-amber-900"
-                          >
-                            <span className="text-[clamp(0.9rem,2.7vw,1.05rem)] tracking-wide">
-                              {event.name}
-                            </span>
-                            <span className="mb-[3px] flex-1 border-b border-dotted border-amber-700/35" />
-                            <span className="text-[clamp(0.78rem,2.3vw,0.9rem)] tracking-[0.08em] text-amber-800/90 tabular-nums">
-                              {event.time}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                  <p className="mt-5 border-y border-amber-700/30 px-6 py-2 font-serif text-[clamp(0.85rem,2.6vw,1.05rem)] tracking-[0.1em] text-amber-900 short:text-base">
+                    {dateDisplay}
+                  </p>
                 </div>
-              )}
 
-              {location && (
-                <p className="mt-6 font-serif text-[0.8rem] text-amber-800/70 sm:text-sm">
-                  {[location.city, location.state, location.country].filter(Boolean).join(" · ")}
-                </p>
-              )}
+                <div className="flex flex-col items-center short:flex-1">
+                  {schedule && schedule.length > 0 && (
+                    <div className="mt-6 w-full max-w-[22rem] space-y-4 short:mt-0">
+                      {schedule.map((day) => (
+                        <div key={day.day}>
+                          <div className="mb-2 flex items-center justify-center gap-2.5">
+                            <span className="h-px flex-1 bg-amber-700/25" />
+                            <span className="font-serif text-[0.62rem] tracking-[0.3em] text-amber-800/85 uppercase whitespace-nowrap">
+                              {day.day}
+                              {day.date && ` · ${day.date}`}
+                            </span>
+                            <span className="h-px flex-1 bg-amber-700/25" />
+                          </div>
 
-              {closing?.message && (
-                <p className="mt-4 max-w-[20rem] font-serif text-[0.72rem] leading-relaxed text-amber-800/60 sm:text-xs">
-                  {closing.message}
-                </p>
-              )}
+                          <ul className="space-y-1">
+                            {day.events.map((event) => (
+                              <li
+                                key={event.name}
+                                className="flex items-baseline gap-2 font-serif text-amber-900"
+                              >
+                                <span className="text-[clamp(0.9rem,2.7vw,1.05rem)] tracking-wide short:text-base">
+                                  {event.name}
+                                </span>
+                                <span className="mb-[3px] flex-1 border-b border-dotted border-amber-700/35" />
+                                <span className="text-[clamp(0.78rem,2.3vw,0.9rem)] tracking-[0.08em] text-amber-800/90 tabular-nums short:text-sm">
+                                  {event.time}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-              {closing?.signoff && (
-                <p className="mt-2.5 font-serif text-[0.85rem] italic text-amber-800/80 sm:text-sm">
-                  {closing.signoff}
-                </p>
-              )}
+                  {location && (
+                    <p className="mt-6 font-serif text-[0.8rem] text-amber-800/70 sm:text-sm short:mt-4">
+                      {[location.city, location.state, location.country].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
 
-              <div className="mt-5">
-                <Ornament flip />
+                  {closing?.message && (
+                    <p className="mt-4 max-w-[20rem] font-serif text-[0.72rem] leading-relaxed text-amber-800/60 sm:text-xs short:mt-2.5">
+                      {closing.message}
+                    </p>
+                  )}
+
+                  {closing?.signoff && (
+                    <p className="mt-2.5 font-serif text-[0.85rem] italic text-amber-800/80 sm:text-sm short:mt-1.5">
+                      {closing.signoff}
+                    </p>
+                  )}
+
+                  <div className="mt-5 short:mt-3">
+                    <Ornament flip />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
           <Roll position="bottom" />
         </div>

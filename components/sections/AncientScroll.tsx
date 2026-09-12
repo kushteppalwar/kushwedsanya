@@ -3,7 +3,7 @@
 import { useRef, useEffect, useLayoutEffect, useCallback, forwardRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import type { ScheduleDay } from "@/lib/content";
+import type { EventLocation, ScheduleDay } from "@/lib/content";
 
 gsap.registerPlugin(ScrollTrigger);
 // Mobile browsers resize the viewport as the address bar collapses mid-scroll;
@@ -19,16 +19,18 @@ interface AncientScrollProps {
   partner2: string;
   dateDisplay: string;
   schedule?: ScheduleDay[];
-  location?: {
-    city?: string;
-    state?: string;
-    country?: string;
-  };
+  location?: EventLocation;
+  directionsUrl?: string;
+  calendarHref?: string;
+  calendarFileName?: string;
   closing?: {
     message?: string;
     signoff?: string;
   };
 }
+
+const inkLink =
+  "inline-flex items-center gap-1.5 font-serif text-[0.78rem] tracking-[0.12em] text-amber-900/85 uppercase underline decoration-amber-700/40 underline-offset-4 transition-colors hover:text-amber-950 hover:decoration-amber-800/70 sm:text-xs";
 
 function Ornament({ flip = false }: { flip?: boolean }) {
   return (
@@ -64,6 +66,9 @@ export default function AncientScroll({
   dateDisplay,
   schedule,
   location,
+  directionsUrl,
+  calendarHref,
+  calendarFileName,
   closing,
 }: AncientScrollProps) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -285,9 +290,44 @@ export default function AncientScroll({
                   )}
 
                   {location && (
-                    <p className="mt-6 font-serif text-[0.8rem] text-amber-800/70 sm:text-sm short:mt-4">
-                      {[location.city, location.state, location.country].filter(Boolean).join(" · ")}
-                    </p>
+                    <div className="mt-6 short:mt-4">
+                      {location.venue && (
+                        <p className="ancient-text font-serif text-[clamp(1rem,3vw,1.2rem)] tracking-[0.06em] text-amber-950">
+                          {location.venue}
+                        </p>
+                      )}
+                      <p className="mt-1 font-serif text-[0.8rem] text-amber-800/70 sm:text-sm">
+                        {[location.city, location.state, location.country].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                  )}
+
+                  {(directionsUrl || calendarHref) && (
+                    <div className="mt-3.5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+                      {directionsUrl && (
+                        <a
+                          href={directionsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={inkLink}
+                        >
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21s-6-5.4-6-11a6 6 0 1 1 12 0c0 5.6-6 11-6 11Z" />
+                            <circle cx="12" cy="10" r="2.2" />
+                          </svg>
+                          Get directions
+                        </a>
+                      )}
+                      {calendarHref && (
+                        <a href={calendarHref} download={calendarFileName} className={inkLink}>
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+                            <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
+                            <path strokeLinecap="round" d="M3.5 9.5h17M8 3v4M16 3v4" />
+                          </svg>
+                          Add to calendar
+                        </a>
+                      )}
+                    </div>
                   )}
 
                   {closing?.message && (
@@ -342,7 +382,7 @@ export default function AncientScroll({
         </div>
       </div>
 
-      <div ref={hintRef} className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2">
+      <div ref={hintRef} className="pointer-events-none absolute bottom-8 left-1/2 z-50 -translate-x-1/2">
         <div className="flex flex-col items-center gap-3">
           <span className="font-serif text-xs tracking-[0.3em] text-amber-300/50 uppercase sm:text-sm">
             Scroll to unfurl

@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getEventConfig, getEventMeta, eventSlugs } from "@/lib/content";
+import {
+  getEventConfig,
+  getEventMeta,
+  getDirectionsUrl,
+  eventSlugs,
+} from "@/lib/content";
+import { buildCalendarHref } from "@/lib/calendar";
 import AncientScroll from "@/components/sections/AncientScroll";
 
 interface PageProps {
@@ -43,6 +49,9 @@ export default async function EventPage({ params }: PageProps) {
         dateDisplay={config.weddingDate.display}
         schedule={config.schedule}
         location={config.location}
+        directionsUrl={getDirectionsUrl(config.location)}
+        calendarHref={buildCalendarHref(config)}
+        calendarFileName={`${config.couple.partner1}-${config.couple.partner2}-${config.eventName}.ics`.toLowerCase()}
         closing={config.closing}
       />
     </main>

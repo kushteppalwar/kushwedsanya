@@ -1,20 +1,34 @@
 import weddingConfig from "@/config/wedding.json";
 import receptionConfig from "@/config/reception.json";
 
+export interface ScheduleEvent {
+  name: string;
+  time: string;
+  /** Local start time in the venue's time zone, as "YYYY-MM-DDTHH:mm". */
+  start?: string;
+}
+
 export interface ScheduleDay {
   day: string;
   date?: string;
-  events: { name: string; time: string }[];
+  events: ScheduleEvent[];
+}
+
+export interface EventLocation {
+  venue?: string;
+  city: string;
+  state?: string;
+  country: string;
 }
 
 export interface EventConfig {
+  eventName: string;
   couple: {
     partner1: string;
     partner2: string;
     partner1City?: string;
     partner2City?: string;
   };
-  schedule?: ScheduleDay[];
   weddingDate: {
     display: string;
     startDay: string;
@@ -24,12 +38,8 @@ export interface EventConfig {
     dayOfWeek: string;
     tagline: string;
   };
-  location: {
-    venue?: string;
-    city: string;
-    state: string;
-    country: string;
-  };
+  schedule?: ScheduleDay[];
+  location: EventLocation;
   closing: {
     message: string;
     signoff: string;
@@ -47,10 +57,21 @@ export function getEventConfig(slug: string): EventConfig | undefined {
   return events[slug];
 }
 
+export function formatPlace(location: EventLocation) {
+  return [location.venue, location.city, location.country].filter(Boolean).join(", ");
+}
+
 export function getEventMeta(config: EventConfig) {
-  const { couple, weddingDate, location } = config;
+  const { couple, eventName, weddingDate, location } = config;
+  const names = `${couple.partner1} & ${couple.partner2}`;
   return {
-    title: `${couple.partner1} & ${couple.partner2} — Save the Date`,
-    description: `Join us as ${couple.partner1} & ${couple.partner2} celebrate their wedding on ${weddingDate.display} in ${location.city}, ${location.state}.`,
+    title: `${names} — ${eventName} Invitation`,
+    description: `You are invited to the ${eventName.toLowerCase()} of ${names} on ${weddingDate.display} at ${formatPlace(location)}.`,
   };
+}
+
+export function getDirectionsUrl(location: EventLocation) {
+  if (!location.venue) return undefined;
+  const query = encodeURIComponent(formatPlace(location));
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }

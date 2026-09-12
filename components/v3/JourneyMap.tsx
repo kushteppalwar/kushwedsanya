@@ -13,7 +13,7 @@ interface Point {
 }
 
 /** Quadratic curve bowing east of the straight line, like a hand-drawn flight path. */
-function routeCurve(a: Point, b: Point) {
+export function routeCurve(a: Point, b: Point) {
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const dx = b.x - a.x;
   const dy = b.y - a.y;
@@ -30,7 +30,7 @@ function routeCurve(a: Point, b: Point) {
     pathLength += Math.hypot(current.x - previous.x, current.y - previous.y);
     previous = current;
   }
-  return { d: `M ${a.x} ${a.y} Q ${control.x} ${control.y} ${b.x} ${b.y}`, mid: point(0.5), pathLength };
+  return { d: `M ${a.x} ${a.y} Q ${control.x} ${control.y} ${b.x} ${b.y}`, mid: point(0.5), pathLength, point };
 }
 
 /** Deterministic wobbly rings that read as terrain contours. */
@@ -52,7 +52,53 @@ const contours = [
   [330, 860, 120, 4.3],
 ] as const;
 
-function Pin({ point, stop, align }: { point: Point; stop: JourneyStop; align: "start" | "end" }) {
+/** Graticule, terrain contours and compass rose shared by the map versions. */
+export function MapDecor() {
+  const { meridians, parallels } = graticule();
+  return (
+    <>
+      <g stroke="var(--jm-line)" strokeWidth="1">
+        {meridians.map((m) => (
+          <line key={m.label} x1={m.x} y1="0" x2={m.x} y2={MAP_SIZE} />
+        ))}
+        {parallels.map((p) => (
+          <line key={p.label} x1="0" y1={p.y} x2={MAP_SIZE} y2={p.y} />
+        ))}
+      </g>
+      <g fill="var(--jm-muted)" fontFamily="var(--font-sans)" fontSize="15" letterSpacing="2" opacity="0.8">
+        {meridians.map((m) => (
+          <text key={m.label} x={m.x + 6} y={MAP_SIZE - 12}>
+            {m.label}
+          </text>
+        ))}
+        {parallels.map((p) => (
+          <text key={p.label} x="12" y={p.y - 6}>
+            {p.label}
+          </text>
+        ))}
+      </g>
+
+      <g fill="none" stroke="var(--jm-ink)" strokeWidth="1" opacity="0.16">
+        {contours.map(([cx, cy, r, seed]) => (
+          <path key={`${cx}-${cy}-${r}`} d={contour(cx, cy, r, seed)} />
+        ))}
+      </g>
+
+      <g transform={`translate(${MAP_SIZE - 110} 110)`} fill="var(--jm-ink)" opacity="0.75">
+        <circle r="46" fill="none" stroke="currentColor" strokeWidth="1" />
+        <circle r="34" fill="none" stroke="currentColor" strokeWidth="0.6" strokeDasharray="2 4" />
+        <path d="M0 -42 L8 0 L0 42 L-8 0 Z" fill="var(--jm-accent)" />
+        <path d="M-42 0 L0 8 L42 0 L0 -8 Z" opacity="0.6" />
+        <path d="M0 -42 L8 0 L-8 0 Z" fill="var(--jm-ink)" opacity="0.5" />
+        <text y="-54" textAnchor="middle" fontFamily="var(--font-serif)" fontSize="20">
+          N
+        </text>
+      </g>
+    </>
+  );
+}
+
+export function Pin({ point, stop, align }: { point: Point; stop: JourneyStop; align: "start" | "end" }) {
   const dir = align === "start" ? 1 : -1;
   return (
     <g>
@@ -107,7 +153,6 @@ export default function JourneyMap({ from, to, className = "" }: JourneyMapProps
   const a = project(from);
   const b = project(to);
   const route = routeCurve(a, b);
-  const { meridians, parallels } = graticule();
   const km = Math.round(distanceKm(from, to) / 10) * 10;
   const fromAlign = a.x <= b.x ? "end" : "start";
   const toAlign = fromAlign === "end" ? "start" : "end";
@@ -127,44 +172,7 @@ export default function JourneyMap({ from, to, className = "" }: JourneyMapProps
         </radialGradient>
       </defs>
 
-      <g stroke="var(--jm-line)" strokeWidth="1">
-        {meridians.map((m) => (
-          <line key={m.label} x1={m.x} y1="0" x2={m.x} y2={MAP_SIZE} />
-        ))}
-        {parallels.map((p) => (
-          <line key={p.label} x1="0" y1={p.y} x2={MAP_SIZE} y2={p.y} />
-        ))}
-      </g>
-      <g fill="var(--jm-muted)" fontFamily="var(--font-sans)" fontSize="15" letterSpacing="2" opacity="0.8">
-        {meridians.map((m) => (
-          <text key={m.label} x={m.x + 6} y={MAP_SIZE - 12}>
-            {m.label}
-          </text>
-        ))}
-        {parallels.map((p) => (
-          <text key={p.label} x="12" y={p.y - 6}>
-            {p.label}
-          </text>
-        ))}
-      </g>
-
-      <g fill="none" stroke="var(--jm-ink)" strokeWidth="1" opacity="0.16">
-        {contours.map(([cx, cy, r, seed]) => (
-          <path key={`${cx}-${cy}-${r}`} d={contour(cx, cy, r, seed)} />
-        ))}
-      </g>
-
-      {/* Compass rose */}
-      <g transform={`translate(${MAP_SIZE - 110} 110)`} fill="var(--jm-ink)" opacity="0.75">
-        <circle r="46" fill="none" stroke="currentColor" strokeWidth="1" />
-        <circle r="34" fill="none" stroke="currentColor" strokeWidth="0.6" strokeDasharray="2 4" />
-        <path d="M0 -42 L8 0 L0 42 L-8 0 Z" fill="var(--jm-accent)" />
-        <path d="M-42 0 L0 8 L42 0 L0 -8 Z" opacity="0.6" />
-        <path d="M0 -42 L8 0 L-8 0 Z" fill="var(--jm-ink)" opacity="0.5" />
-        <text y="-54" textAnchor="middle" fontFamily="var(--font-serif)" fontSize="20">
-          N
-        </text>
-      </g>
+      <MapDecor />
 
       {/* Route: soft underline, then the dashed line drawing itself in */}
       <path d={route.d} fill="none" stroke="var(--jm-accent)" strokeWidth="14" opacity="0.08" strokeLinecap="round" />

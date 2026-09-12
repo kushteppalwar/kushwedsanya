@@ -23,6 +23,11 @@ export interface EventLocation {
 
 export interface EventConfig {
   eventName: string;
+  hashtag?: string;
+  invitation?: {
+    intro: string;
+    request: string;
+  };
   couple: {
     partner1: string;
     partner2: string;

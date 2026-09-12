@@ -1,5 +1,10 @@
 {
   "eventName": "Wedding",
+  "hashtag": "#KushWedsSanya",
+  "invitation": {
+    "intro": "Together with their families",
+    "request": "request the pleasure of your company at the celebration of their wedding"
+  },
   "couple": {
     "partner1": "Sanya",
     "partner2": "Kush",

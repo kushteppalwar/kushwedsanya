@@ -17,8 +17,25 @@
   --color-charcoal: #f5f0e8;
   --color-scroll-bg: #1c1712;
 
+  /* Editorial palette for the main site */
+  --color-paper: #f4eee4;
+  --color-paper-deep: #e8dfcf;
+  --color-ink: #17120e;
+  --color-ink-soft: #6b6057;
+  --color-wine: #6f1d2b;
+  --color-brass: #b48a3c;
+
   --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
   --font-sans: "Cormorant Garamond", Garamond, "Times New Roman", serif;
+
+  --animate-marquee: marquee 28s linear infinite;
+  --animate-spin-slow: spin 40s linear infinite;
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 html {
@@ -35,6 +52,38 @@ body {
 ::selection {
   background-color: rgba(201, 162, 39, 0.85);
   color: #1a1510;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Main site — editorial surface helpers
+   ═══════════════════════════════════════════════════════════════════ */
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Each line of the display headings rises out of a clipped wrapper */
+.line-mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+
+.line-mask > span {
+  display: block;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-spin-slow {
+    animation: none;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════

@@ -4,6 +4,11 @@ import { formatPlace, type EventConfig } from "@/lib/content";
 const VENUE_UTC_OFFSET = "+05:30";
 const CEREMONY_DURATION_MS = 2 * 60 * 60 * 1000;
 
+/** Turns a config start time ("YYYY-MM-DDTHH:mm", venue-local) into an absolute ISO instant. */
+export function ceremonyInstant(start: string) {
+  return `${start}:00${VENUE_UTC_OFFSET}`;
+}
+
 function toIcsUtc(date: Date) {
   return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 }
@@ -28,7 +33,7 @@ export function buildCalendarHref(config: EventConfig) {
   const stamp = toIcsUtc(new Date());
 
   const entries = ceremonies.flatMap((event) => {
-    const start = new Date(`${event.start}:00${VENUE_UTC_OFFSET}`);
+    const start = new Date(ceremonyInstant(event.start));
     const end = new Date(start.getTime() + CEREMONY_DURATION_MS);
     return [
       "BEGIN:VEVENT",

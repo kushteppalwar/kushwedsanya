@@ -1,164 +1,143 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface HeroProps {
+  tagline: string;
   partner1: string;
   partner2: string;
-  tagline: string;
+  dateDisplay: string;
   city1?: string;
   city2?: string;
+  venue?: string;
+}
+
+function RingText({ text }: { text: string }) {
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      className="animate-spin-slow h-full w-full text-ink/70"
+      aria-hidden="true"
+    >
+      <defs>
+        <path id="hero-ring" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0" />
+      </defs>
+      <text className="font-sans text-[11.5px] tracking-[0.32em] uppercase" fill="currentColor">
+        <textPath href="#hero-ring">{text}</textPath>
+      </text>
+    </svg>
+  );
 }
 
 export default function Hero({
+  tagline,
   partner1,
   partner2,
-  tagline,
-  city1 = "Delhi",
-  city2 = "Pune",
+  dateDisplay,
+  city1,
+  city2,
+  venue,
 }: HeroProps) {
-  const containerRef = useRef<HTMLElement>(null);
-  const nameRef = useRef<HTMLHeadingElement>(null);
-  const taglineRef = useRef<HTMLParagraphElement>(null);
-  const ampersandRef = useRef<HTMLSpanElement>(null);
-  const subtitleRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const prefersReduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (prefersReduced) {
-      gsap.set(
-        [
-          nameRef.current,
-          taglineRef.current,
-          ampersandRef.current,
-          subtitleRef.current,
-        ],
-        { opacity: 1 }
-      );
-      return;
-    }
+    const ctx = gsap.context(() => {
+      if (prefersReduced) {
+        gsap.set("[data-hero-fade], .line-mask > span", { opacity: 1, y: 0 });
+        return;
+      }
 
-    const tl = gsap.timeline({ delay: 0.3 });
+      gsap
+        .timeline({ defaults: { ease: "power4.out" } })
+        .from("[data-hero-fade]", { opacity: 0, y: -12, duration: 0.9, stagger: 0.08 }, 0.1)
+        .from(".line-mask > span", { yPercent: 110, duration: 1.3, stagger: 0.14 }, 0.2)
+        .from(ringRef.current, { opacity: 0, scale: 0.85, duration: 1.2 }, 0.6);
 
-    tl.fromTo(
-      taglineRef.current,
-      { opacity: 0, y: -20 },
-      { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
-    )
-      .fromTo(
-        nameRef.current,
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 1.4, ease: "power3.out" },
-        "-=0.6"
-      )
-      .fromTo(
-        ampersandRef.current,
-        { opacity: 0, scale: 0.5, rotation: -10 },
-        {
-          opacity: 1,
-          scale: 1,
-          rotation: 0,
-          duration: 0.8,
-          ease: "back.out(1.7)",
+      gsap.to(ringRef.current, {
+        yPercent: 25,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
         },
-        "-=0.8"
-      )
-      .fromTo(
-        subtitleRef.current,
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 1, ease: "power3.out" },
-        "-=0.3"
-      );
+      });
+    }, sectionRef);
 
-    const parallaxTween = gsap.to(containerRef.current, {
-      yPercent: 30,
-      ease: "none",
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top top",
-        end: "bottom top",
-        scrub: true,
-      },
-    });
-
-    return () => {
-      tl.kill();
-      parallaxTween.scrollTrigger?.kill();
-      parallaxTween.kill();
-    };
+    return () => ctx.revert();
   }, []);
+
+  const ringCopy = [`${partner1} & ${partner2}`, dateDisplay, venue ?? city1]
+    .filter(Boolean)
+    .join("  ·  ")
+    .concat("  ·  ");
 
   return (
     <section
-      ref={containerRef}
-      className="relative flex min-h-svh flex-col items-center justify-center px-6 text-center"
+      id="top"
+      ref={sectionRef}
+      className="grain relative flex min-h-[100svh] flex-col overflow-hidden bg-paper text-ink"
     >
-      <div className="absolute inset-0 bg-gradient-to-b from-ivory via-cream to-cream" />
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 pt-24 pb-10 sm:px-8 sm:pt-28">
+        <div className="flex flex-col gap-1.5 text-[0.68rem] tracking-[0.35em] text-ink-soft uppercase sm:flex-row sm:items-center sm:justify-between sm:text-xs">
+          <p data-hero-fade>{tagline}</p>
+          <p data-hero-fade>{dateDisplay}</p>
+        </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-6">
-        <p
-          ref={taglineRef}
-          className="font-sans text-lg tracking-[0.35em] text-warm-gray uppercase opacity-0 sm:text-xl"
-        >
-          {tagline}
-        </p>
-
-        <h1
-          ref={nameRef}
-          className="font-serif text-5xl leading-tight font-light tracking-wide text-charcoal opacity-0 sm:text-7xl lg:text-8xl"
-        >
-          {partner1}
-          <span
-            ref={ampersandRef}
-            className="mx-3 inline-block font-serif text-gold italic opacity-0 sm:mx-5"
-          >
-            &amp;
+        <h1 className="my-auto py-6 font-serif font-light leading-[0.88] tracking-[-0.02em] text-[clamp(4.5rem,19vw,8rem)] sm:py-8 sm:text-[clamp(6rem,13.5vw,12rem)]">
+          <span className="line-mask">
+            <span>{partner1}</span>
           </span>
-          {partner2}
+
+          <span className="my-2 flex items-center gap-6 sm:my-4 sm:gap-10">
+            <span
+              ref={ringRef}
+              className="relative block h-[clamp(6.5rem,15vw,10.5rem)] w-[clamp(6.5rem,15vw,10.5rem)] shrink-0"
+            >
+              <RingText text={ringCopy} />
+              <span className="absolute inset-0 flex items-center justify-center font-serif text-[clamp(2.6rem,6vw,4.8rem)] font-normal italic text-wine">
+                &amp;
+              </span>
+            </span>
+
+            {(city1 || city2) && (
+              <span
+                data-hero-fade
+                className="font-sans text-base leading-snug font-normal tracking-[0.02em] text-ink-soft sm:text-xl"
+              >
+                {city1}
+                <span className="mx-2 text-brass">→</span>
+                {city2}
+                <span className="mt-1 block text-sm tracking-[0.25em] uppercase sm:text-base">
+                  Two cities, one celebration
+                </span>
+              </span>
+            )}
+          </span>
+
+          <span className="line-mask text-right">
+            <span>{partner2}</span>
+          </span>
         </h1>
 
-        <div ref={subtitleRef} className="mt-4 flex items-center gap-3 opacity-0">
-          <span className="block h-px w-12 bg-gold/50" />
-          <span className="font-sans text-sm tracking-[0.4em] text-warm-gray-light uppercase">
-            Request the pleasure of your company
-          </span>
-          <span className="block h-px w-12 bg-gold/50" />
-        </div>
-
-        <div className="mt-2 flex items-center gap-2">
-          <span className="rounded-full bg-burgundy/20 px-3 py-1 font-sans text-xs tracking-[0.22em] text-charcoal uppercase">
-            {city1}
-          </span>
-          <span className="font-sans text-xs tracking-[0.3em] text-gold-light uppercase">
-            to
-          </span>
-          <span className="rounded-full bg-gold/20 px-3 py-1 font-sans text-xs tracking-[0.22em] text-charcoal uppercase">
-            {city2}
-          </span>
-        </div>
-      </div>
-
-      <div className="absolute bottom-10 animate-bounce">
-        <svg
-          className="h-6 w-6 text-gold/60"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.5}
-          viewBox="0 0 24 24"
+        <div
+          data-hero-fade
+          className="flex items-end justify-between border-t border-ink/15 pt-5 text-[0.68rem] tracking-[0.35em] text-ink-soft uppercase sm:text-xs"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3"
-          />
-        </svg>
+          <a href="#schedule" className="group inline-flex items-center gap-3 transition-colors hover:text-ink">
+            <span className="block h-px w-10 bg-current transition-all group-hover:w-16" />
+            Scroll
+          </a>
+          {venue && <p>{venue}</p>}
+        </div>
       </div>
     </section>
   );

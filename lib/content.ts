@@ -1,6 +1,12 @@
 import weddingConfig from "@/config/wedding.json";
 import receptionConfig from "@/config/reception.json";
 
+export interface ScheduleDay {
+  day: string;
+  date?: string;
+  events: { name: string; time: string }[];
+}
+
 export interface EventConfig {
   couple: {
     partner1: string;
@@ -8,6 +14,7 @@ export interface EventConfig {
     partner1City?: string;
     partner2City?: string;
   };
+  schedule?: ScheduleDay[];
   weddingDate: {
     display: string;
     startDay: string;

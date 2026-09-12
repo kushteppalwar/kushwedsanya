@@ -35,14 +35,13 @@ export default async function EventPage({ params }: PageProps) {
   if (!config) notFound();
 
   return (
-    <main className="relative overflow-hidden">
+    <main className="relative">
       <AncientScroll
         tagline={config.weddingDate.tagline}
         partner1={config.couple.partner1}
         partner2={config.couple.partner2}
         dateDisplay={config.weddingDate.display}
-        city1={config.couple.partner1City}
-        city2={config.couple.partner2City}
+        schedule={config.schedule}
         location={config.location}
         closing={config.closing}
       />

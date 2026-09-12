@@ -14,6 +14,24 @@
     "dayOfWeek": "Wednesday – Thursday",
     "tagline": "Save the Date"
   },
+  "schedule": [
+    {
+      "day": "Day 1",
+      "date": "December 23",
+      "events": [
+        { "name": "Sakharpuda", "time": "1:00 PM" },
+        { "name": "Sangeet", "time": "7:00 PM" }
+      ]
+    },
+    {
+      "day": "Day 2",
+      "date": "December 24",
+      "events": [
+        { "name": "Haldi", "time": "10:00 AM" },
+        { "name": "Wedding", "time": "7:00 PM" }
+      ]
+    }
+  ],
   "location": {
     "city": "New Delhi",
     "state": "Delhi",

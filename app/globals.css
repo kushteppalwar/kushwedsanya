@@ -102,6 +102,92 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   Unrolling scroll — rolled rods and the parchment sheet between them
+   ═══════════════════════════════════════════════════════════════════ */
+.scroll-roll {
+  position: relative;
+  height: 2.6rem;
+  border-radius: 0.55rem;
+  background: linear-gradient(
+    180deg,
+    #a8854f 0%,
+    #cdae7c 12%,
+    #eddcb8 32%,
+    #f4e8cd 46%,
+    #dcc59a 68%,
+    #b3925f 86%,
+    #8d6f42 100%
+  );
+  box-shadow:
+    inset 0 2px 3px rgba(255, 248, 225, 0.55),
+    inset 0 -3px 6px rgba(80, 55, 25, 0.4),
+    0 10px 26px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+}
+
+.scroll-roll--top {
+  box-shadow:
+    inset 0 2px 3px rgba(255, 248, 225, 0.55),
+    inset 0 -3px 6px rgba(80, 55, 25, 0.4),
+    0 12px 22px rgba(0, 0, 0, 0.55);
+}
+
+.scroll-roll--bottom {
+  box-shadow:
+    inset 0 3px 6px rgba(80, 55, 25, 0.35),
+    inset 0 -2px 3px rgba(255, 248, 225, 0.45),
+    0 12px 26px rgba(0, 0, 0, 0.5);
+}
+
+/* Curled paper ends poking out past the width of the sheet */
+.scroll-roll__cap {
+  position: absolute;
+  top: 0.18rem;
+  bottom: 0.18rem;
+  width: 1.15rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(180deg, #b08c55 0%, #e6d2a8 40%, #cbaa76 70%, #957748 100%);
+  box-shadow: inset 0 1px 2px rgba(255, 248, 225, 0.4);
+}
+
+.scroll-roll__cap--left {
+  left: -0.72rem;
+}
+
+.scroll-roll__cap--right {
+  right: -0.72rem;
+}
+
+/* The window clips the sheet — its height is what the scroll animation drives */
+.scroll-window {
+  background: linear-gradient(180deg, #f3e4c4 0%, #ecdab4 45%, #e6d2a8 100%);
+  box-shadow:
+    inset 6px 0 14px -8px rgba(120, 85, 40, 0.55),
+    inset -6px 0 14px -8px rgba(120, 85, 40, 0.55),
+    0 14px 34px rgba(0, 0, 0, 0.45);
+  will-change: height;
+}
+
+.scroll-sheet {
+  background: linear-gradient(180deg, #f5e6c8 0%, #ecdab4 30%, #e7d3a9 65%, #f1e0bd 100%);
+}
+
+/* Aged edges along the sides of the sheet */
+.scroll-sheet::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(140, 100, 50, 0.22) 0%,
+    transparent 7%,
+    transparent 93%,
+    rgba(140, 100, 50, 0.22) 100%
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Shadow and depth helpers
    ═══════════════════════════════════════════════════════════════════ */
 .wooden-roll {

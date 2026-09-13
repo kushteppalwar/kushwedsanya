@@ -33,61 +33,71 @@
         "city": "Mumbai",
         "state": "Maharashtra",
         "lat": 19.076,
-        "lon": 72.8777
+        "lon": 72.8777,
+        "region": "West"
       },
       {
         "city": "Bengaluru",
         "state": "Karnataka",
         "lat": 12.9716,
-        "lon": 77.5946
+        "lon": 77.5946,
+        "region": "South"
       },
       {
         "city": "Hyderabad",
         "state": "Telangana",
         "lat": 17.385,
-        "lon": 78.4867
+        "lon": 78.4867,
+        "region": "South"
       },
       {
         "city": "Chennai",
         "state": "Tamil Nadu",
         "lat": 13.0827,
-        "lon": 80.2707
+        "lon": 80.2707,
+        "region": "South"
       },
       {
         "city": "Kolkata",
         "state": "West Bengal",
         "lat": 22.5726,
-        "lon": 88.3639
+        "lon": 88.3639,
+        "region": "East & Centre"
       },
       {
         "city": "Jaipur",
         "state": "Rajasthan",
         "lat": 26.9124,
-        "lon": 75.7873
+        "lon": 75.7873,
+        "region": "North"
       },
       {
         "city": "Ahmedabad",
         "state": "Gujarat",
         "lat": 23.0225,
-        "lon": 72.5714
+        "lon": 72.5714,
+        "region": "West"
       },
       {
         "city": "Chandigarh",
         "state": "Chandigarh",
         "lat": 30.7333,
-        "lon": 76.7794
+        "lon": 76.7794,
+        "region": "North"
       },
       {
         "city": "Lucknow",
         "state": "Uttar Pradesh",
         "lat": 26.8467,
-        "lon": 80.9462
+        "lon": 80.9462,
+        "region": "North"
       },
       {
         "city": "Nagpur",
         "state": "Maharashtra",
         "lat": 21.1458,
-        "lon": 79.0882
+        "lon": 79.0882,
+        "region": "East & Centre"
       }
     ]
   },

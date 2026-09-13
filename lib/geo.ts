@@ -23,7 +23,7 @@ export function project(stop: Pick<JourneyStop, "lat" | "lon">, bounds: Bounds =
 }
 
 /** Great-circle distance in kilometres. */
-export function distanceKm(a: JourneyStop, b: JourneyStop) {
+export function distanceKm(a: Pick<JourneyStop, "lat" | "lon">, b: Pick<JourneyStop, "lat" | "lon">) {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat);
   const dLon = toRad(b.lon - a.lon);

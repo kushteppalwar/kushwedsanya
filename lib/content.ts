@@ -41,7 +41,7 @@ export interface EventConfig {
     from: JourneyStop;
     to: JourneyStop;
     /** Cities guests are likely travelling from, for the many-to-one maps. */
-    guestOrigins?: (MapPlace & { region?: string })[];
+    guestOrigins?: MapPlace[];
   };
   invitation?: {
     intro: string;

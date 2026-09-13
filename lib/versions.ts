@@ -30,11 +30,6 @@ export const siteVersions = [
     description: "Many-to-one atlas: Kush's route from Pune, then routes from guests' cities across India converging on the venue.",
   },
   {
-    href: "/version8",
-    label: "Every corner of India",
-    description: "The atlas tours the west, south, east and north in turn, each region's guests drawing their routes to Delhi.",
-  },
-  {
     href: "/version9",
     label: "Round trip",
     description: "Everyone converges on Delhi for the wedding, then the route turns back to Pune for the reception.",

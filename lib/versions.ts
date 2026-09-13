@@ -1,11 +1,39 @@
 export const siteVersions = [
-  { href: "/version2", label: "Classic card" },
-  { href: "/version3", label: "Journey map" },
-  { href: "/version4", label: "3D flyover" },
-  { href: "/version5", label: "Boarding pass" },
-  { href: "/version6", label: "Scroll atlas" },
-  { href: "/version1", label: "Editorial" },
-  { href: "/scroll", label: "Parchment scroll" },
+  {
+    href: "/version2",
+    label: "Classic card",
+    description: "A framed invitation card with gold sprigs, a mandala monogram, script names and drifting petals.",
+  },
+  {
+    href: "/version3",
+    label: "Journey map",
+    description: "Vintage cartography: the Pune → Delhi route drawn on an aged-paper map with real coordinates.",
+  },
+  {
+    href: "/version4",
+    label: "3D flyover",
+    description: "A low-poly night scene where a plane, train or car travels between the two cities.",
+  },
+  {
+    href: "/version5",
+    label: "Boarding pass",
+    description: "Travel documents: a PNQ → DEL boarding pass, passport stamps for each ceremony, and a postcard.",
+  },
+  {
+    href: "/version6",
+    label: "Scroll atlas",
+    description: "The map stays pinned while scrolling draws the route and flies the plane from stop to stop.",
+  },
+  {
+    href: "/version1",
+    label: "Editorial",
+    description: "Big asymmetric type, a rotating ring around the ampersand, and a timeline that draws as you scroll.",
+  },
+  {
+    href: "/scroll",
+    label: "Parchment scroll",
+    description: "A sealed parchment that unrolls as you scroll down and rolls back up as you scroll up.",
+  },
 ];
 
 export function otherVersions(current: string) {

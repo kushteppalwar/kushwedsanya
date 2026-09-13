@@ -25,6 +25,16 @@ export const siteVersions = [
     description: "The map stays pinned while scrolling draws the route and flies the plane from stop to stop.",
   },
   {
+    href: "/version7",
+    label: "All roads to Delhi",
+    description: "Many-to-one atlas: Kush's route from Pune, then routes from guests' cities across India converging on the venue.",
+  },
+  {
+    href: "/version8",
+    label: "Night flight",
+    description: "The scroll atlas revamped as a flight tracker: glowing trail, radar pins, and a live HUD as you scroll.",
+  },
+  {
     href: "/version1",
     label: "Editorial",
     description: "Big asymmetric type, a rotating ring around the ampersand, and a timeline that draws as you scroll.",

@@ -21,14 +21,17 @@ export interface EventLocation {
   country: string;
 }
 
-export interface JourneyStop {
-  person: string;
+export interface MapPlace {
   city: string;
   state: string;
-  /** Airport code, shown on travel-document styled versions. */
-  code?: string;
   lat: number;
   lon: number;
+}
+
+export interface JourneyStop extends MapPlace {
+  person: string;
+  /** Airport code, shown on travel-document styled versions. */
+  code?: string;
 }
 
 export interface EventConfig {
@@ -37,6 +40,8 @@ export interface EventConfig {
   journey?: {
     from: JourneyStop;
     to: JourneyStop;
+    /** Cities guests are likely travelling from, for the many-to-one map. */
+    guestOrigins?: MapPlace[];
   };
   invitation?: {
     intro: string;

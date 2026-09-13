@@ -12,8 +12,84 @@
     "partner2City": "Pune"
   },
   "journey": {
-    "from": { "person": "Kush", "city": "Pune", "state": "Maharashtra", "code": "PNQ", "lat": 18.5204, "lon": 73.8567 },
-    "to": { "person": "Sanya", "city": "Delhi", "state": "Delhi", "code": "DEL", "lat": 28.6139, "lon": 77.209 }
+    "from": {
+      "person": "Kush",
+      "city": "Pune",
+      "state": "Maharashtra",
+      "code": "PNQ",
+      "lat": 18.5204,
+      "lon": 73.8567
+    },
+    "to": {
+      "person": "Sanya",
+      "city": "Delhi",
+      "state": "Delhi",
+      "code": "DEL",
+      "lat": 28.6139,
+      "lon": 77.209
+    },
+    "guestOrigins": [
+      {
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "lat": 19.076,
+        "lon": 72.8777
+      },
+      {
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "lat": 12.9716,
+        "lon": 77.5946
+      },
+      {
+        "city": "Hyderabad",
+        "state": "Telangana",
+        "lat": 17.385,
+        "lon": 78.4867
+      },
+      {
+        "city": "Chennai",
+        "state": "Tamil Nadu",
+        "lat": 13.0827,
+        "lon": 80.2707
+      },
+      {
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "lat": 22.5726,
+        "lon": 88.3639
+      },
+      {
+        "city": "Jaipur",
+        "state": "Rajasthan",
+        "lat": 26.9124,
+        "lon": 75.7873
+      },
+      {
+        "city": "Ahmedabad",
+        "state": "Gujarat",
+        "lat": 23.0225,
+        "lon": 72.5714
+      },
+      {
+        "city": "Chandigarh",
+        "state": "Chandigarh",
+        "lat": 30.7333,
+        "lon": 76.7794
+      },
+      {
+        "city": "Lucknow",
+        "state": "Uttar Pradesh",
+        "lat": 26.8467,
+        "lon": 80.9462
+      },
+      {
+        "city": "Nagpur",
+        "state": "Maharashtra",
+        "lat": 21.1458,
+        "lon": 79.0882
+      }
+    ]
   },
   "weddingDate": {
     "display": "December 23 – 24, 2026",
@@ -29,16 +105,32 @@
       "day": "Day 1",
       "date": "December 23",
       "events": [
-        { "name": "Sakharpuda", "time": "1:00 PM", "start": "2026-12-23T13:00" },
-        { "name": "Sangeet", "time": "7:00 PM", "start": "2026-12-23T19:00" }
+        {
+          "name": "Sakharpuda",
+          "time": "1:00 PM",
+          "start": "2026-12-23T13:00"
+        },
+        {
+          "name": "Sangeet",
+          "time": "7:00 PM",
+          "start": "2026-12-23T19:00"
+        }
       ]
     },
     {
       "day": "Day 2",
       "date": "December 24",
       "events": [
-        { "name": "Haldi", "time": "10:00 AM", "start": "2026-12-24T10:00" },
-        { "name": "Wedding", "time": "7:00 PM", "start": "2026-12-24T19:00" }
+        {
+          "name": "Haldi",
+          "time": "10:00 AM",
+          "start": "2026-12-24T10:00"
+        },
+        {
+          "name": "Wedding",
+          "time": "7:00 PM",
+          "start": "2026-12-24T19:00"
+        }
       ]
     }
   ],

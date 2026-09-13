@@ -1,5 +1,5 @@
 import type { JourneyStop } from "@/lib/content";
-import { MAP_SIZE, distanceKm, graticule, project } from "@/lib/geo";
+import { MAP_SIZE, distanceKm, graticule, project, type Bounds } from "@/lib/geo";
 
 interface JourneyMapProps {
   from: JourneyStop;
@@ -13,12 +13,12 @@ interface Point {
 }
 
 /** Quadratic curve bowing east of the straight line, like a hand-drawn flight path. */
-export function routeCurve(a: Point, b: Point) {
+export function routeCurve(a: Point, b: Point, bow = 180) {
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const length = Math.hypot(dx, dy) || 1;
-  const control = { x: mid.x + (dy / length) * 180, y: mid.y - (dx / length) * 180 };
+  const control = { x: mid.x + (dy / length) * bow, y: mid.y - (dx / length) * bow };
   const point = (t: number) => ({
     x: (1 - t) ** 2 * a.x + 2 * (1 - t) * t * control.x + t ** 2 * b.x,
     y: (1 - t) ** 2 * a.y + 2 * (1 - t) * t * control.y + t ** 2 * b.y,
@@ -53,8 +53,8 @@ const contours = [
 ] as const;
 
 /** Graticule, terrain contours and compass rose shared by the map versions. */
-export function MapDecor() {
-  const { meridians, parallels } = graticule();
+export function MapDecor({ bounds, step = 2 }: { bounds?: Bounds; step?: number } = {}) {
+  const { meridians, parallels } = graticule(bounds, step);
   return (
     <>
       <g stroke="var(--jm-line)" strokeWidth="1">

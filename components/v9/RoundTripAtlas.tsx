@@ -9,6 +9,7 @@ interface RoundTripAtlasProps {
   config: EventConfig;
   reception?: EventConfig;
   directionsUrl?: string;
+  receptionDirectionsUrl?: string;
   calendarHref?: string;
   calendarFileName?: string;
 }
@@ -23,6 +24,7 @@ export default function RoundTripAtlas({
   config,
   reception,
   directionsUrl,
+  receptionDirectionsUrl,
   calendarHref,
   calendarFileName,
 }: RoundTripAtlasProps) {
@@ -168,9 +170,14 @@ export default function RoundTripAtlas({
             </p>
           )}
           <div className="pointer-events-auto mt-6 flex flex-wrap gap-3">
-            {directionsUrl && (
-              <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className={jmButtonPrimary}>
-                Wedding venue
+            {(receptionDirectionsUrl ?? directionsUrl) && (
+              <a
+                href={receptionDirectionsUrl ?? directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={jmButtonPrimary}
+              >
+                {receptionDirectionsUrl ? "Reception venue" : "Wedding venue"}
                 <span aria-hidden="true">↗</span>
               </a>
             )}

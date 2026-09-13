@@ -32,6 +32,7 @@ export default function Version9() {
           config={config}
           reception={reception}
           directionsUrl={getDirectionsUrl(location)}
+          receptionDirectionsUrl={reception && getDirectionsUrl(reception.location)}
           calendarHref={calendarHref}
           calendarFileName={calendarFileName}
         />

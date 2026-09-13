@@ -7,14 +7,15 @@
     "partner2City": "Pune"
   },
   "weddingDate": {
-    "display": "December 28, 2026",
+    "display": "November 28, 2026",
     "startDay": "28",
-    "month": "December",
+    "month": "November",
     "year": "2026",
-    "dayOfWeek": "Monday",
+    "dayOfWeek": "Saturday",
     "tagline": "The Reception Of"
   },
   "location": {
+    "venue": "Mayfield Ivy Garden & Banquet",
     "city": "Pune",
     "state": "Maharashtra",
     "country": "India"

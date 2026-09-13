@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 interface CountdownProps {
-  /** Absolute instant of the first ceremony, e.g. "2026-12-23T13:00:00+05:30". */
+  /** Absolute instant of the first ceremony, e.g. "2026-11-23T13:00:00+05:30". */
   target: string;
   className?: string;
 }

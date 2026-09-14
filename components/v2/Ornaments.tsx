@@ -111,6 +111,22 @@ const icons: Record<string, React.ReactNode> = {
   ),
 };
 
+const flute = (
+  <>
+    <path d="M-2 -6 h4 l-0.8 6 a1.2 1.2 0 0 1 -2.4 0z" />
+    <path d="M0 0 v6" />
+    <path d="M-2.2 6 h4.4" />
+  </>
+);
+
+icons.reception = (
+  <>
+    <g transform="translate(8.5 10) rotate(-14)">{flute}</g>
+    <g transform="translate(15.5 10) rotate(14)">{flute}</g>
+    <path d="M12 2.5 v1.6 M11.2 3.3 h1.6" />
+  </>
+);
+
 const fallbackIcon = (
   <path d="M12 3 l 2.2 6.8 L 21 12 l -6.8 2.2 L 12 21 l -2.2 -6.8 L 3 12 l 6.8 -2.2z" />
 );

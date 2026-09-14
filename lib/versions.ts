@@ -45,6 +45,11 @@ export const siteVersions = [
     description: "Version 10 with one steady world view for the overseas leg and the inbound routes faded right down for the homeward flight.",
   },
   {
+    href: "/version12",
+    label: "World round trip · attire",
+    description: "Version 11 with the final event names, halls and timings, and a subtle optional-attire note on every stop.",
+  },
+  {
     href: "/version9",
     label: "Round trip",
     description: "Everyone converges on Delhi for the wedding, then the route turns back to Pune for the reception.",

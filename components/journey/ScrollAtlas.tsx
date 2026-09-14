@@ -465,6 +465,10 @@ export default function ScrollAtlas({
       glide = requestAnimationFrame(step);
     };
     stepRef.current = (direction) => {
+      // The control that was pressed may fade out mid-glide; drop focus first so
+      // the browser's focus fix-up can't interfere with the scroll.
+      if (document.activeElement instanceof HTMLElement)
+        document.activeElement.blur();
       const rect = track.getBoundingClientRect();
       const top = rect.top + window.scrollY;
       const span = rect.height - stage.clientHeight;
@@ -555,7 +559,7 @@ export default function ScrollAtlas({
     >
       <div
         ref={stageRef}
-        className={`sticky top-0 h-svh overflow-hidden ${stageClassName}`}
+        className={`atlas-stage sticky top-0 overflow-hidden ${stageClassName}`}
       >
         <svg
           viewBox={`0 0 ${MAP_SIZE} ${MAP_SIZE}`}
@@ -837,7 +841,18 @@ export default function ScrollAtlas({
                 }}
                 className="absolute bottom-8 left-1/2 -translate-x-1/2 sm:bottom-10"
               >
-                {hint}
+                {stepper ? (
+                  <button
+                    type="button"
+                    aria-label="Begin the journey"
+                    onClick={() => stepRef.current?.(1)}
+                    className="pointer-events-auto -m-3 cursor-pointer p-3 transition-opacity hover:opacity-70"
+                  >
+                    {hint}
+                  </button>
+                ) : (
+                  hint
+                )}
               </div>
             )}
           </div>

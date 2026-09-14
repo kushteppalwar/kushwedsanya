@@ -186,6 +186,14 @@ body {
   --atlas-stop: 125svh;
 }
 
+/* The pinned map fills the viewport as it is *right now*, so the strip the
+   phone's toolbar uncovers while scrolling is map rather than bare page. */
+.atlas-stage {
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+}
+
 @media (min-width: 640px) {
   .atlas-track {
     --atlas-stop: 100svh;

@@ -40,7 +40,7 @@ export default function Version13() {
   const stops = timelineStops(config, reception);
 
   return (
-    <div className="journey-day min-h-svh bg-(--jm-bg) font-sans text-(--jm-ink)">
+    <div className="journey-day min-h-svh overflow-x-clip bg-(--jm-bg) font-sans text-(--jm-ink)">
       <Loader
         partner1={couple.partner1}
         partner2={couple.partner2}

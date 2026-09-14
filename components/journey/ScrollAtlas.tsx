@@ -111,8 +111,13 @@ interface ScrollAtlasProps {
   ariaLabel: string;
 }
 
-const stepButton =
-  "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-(--jm-line) bg-(--jm-bg)/90 text-(--jm-ink) shadow-[0_12px_30px_-18px_rgba(0,0,0,0.5)] transition-[opacity,background-color,transform] duration-300 hover:bg-(--jm-bg) active:scale-95 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-30";
+// Previous / Next: large, worded, always in the same place along the bottom
+const barButton =
+  "pointer-events-auto inline-flex min-h-12 flex-1 items-center justify-center gap-2.5 rounded-full px-5 text-[0.85rem] font-semibold tracking-[0.2em] uppercase transition-[opacity,background-color,transform] duration-300 active:scale-[0.97] data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-35 sm:flex-none sm:min-w-48 sm:px-8 sm:text-sm";
+const barButtonPrev = `${barButton} border border-(--jm-ink)/40 bg-(--jm-bg) text-(--jm-ink) hover:border-(--jm-ink)`;
+const barButtonNext = `${barButton} bg-(--jm-accent) text-(--jm-bg) hover:bg-(--jm-ink)`;
+/** Room the bar takes at the bottom of the stage, for whatever has to sit above it. */
+const BAR_CLEARANCE = "bottom-[calc(5.5rem+env(safe-area-inset-bottom))]";
 
 const FADE = 0.05;
 const HINT_FADE = 0.03;
@@ -516,40 +521,42 @@ export default function ScrollAtlas({
     intro,
   ]);
 
-  const stepButtons = ([-1, 1] as const).map((direction) => (
-    <button
-      key={direction}
-      type="button"
-      data-step={direction}
-      aria-label={direction > 0 ? "Next stop" : "Previous stop"}
-      onClick={() => stepRef.current?.(direction)}
-      className={stepButton}
-      data-disabled={direction < 0}
-      aria-disabled={direction < 0}
-    >
-      <svg
-        viewBox="0 0 16 10"
-        className="h-2.5 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
+  const stepBar = stepper && (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-(--jm-line) bg-(--jm-bg)/92 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:justify-center sm:gap-5 sm:px-8">
+      <button
+        type="button"
+        data-step={-1}
+        onClick={() => stepRef.current?.(-1)}
+        className={barButtonPrev}
+        data-disabled
+        aria-disabled
       >
-        {direction > 0 ? (
-          <path d="M2 2 L8 8 L14 2" />
-        ) : (
-          <path d="M2 8 L8 2 L14 8" />
-        )}
-      </svg>
-    </button>
-  ));
+        <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" aria-hidden="true">
+          <path d="M8 1 L2 5 L8 9 Z" fill="currentColor" />
+        </svg>
+        Previous
+      </button>
+      <button
+        type="button"
+        data-step={1}
+        onClick={() => stepRef.current?.(1)}
+        className={barButtonNext}
+      >
+        Next
+        <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" aria-hidden="true">
+          <path d="M2 1 L8 5 L2 9 Z" fill="currentColor" />
+        </svg>
+      </button>
+    </div>
+  );
 
-  const cardColumn =
+  // Everything anchored to the bottom edge moves up when the bar is there
+  const bottomEdge = stepper ? BAR_CLEARANCE : "bottom-4 sm:bottom-8";
+  const cardColumn = `lg:top-0 ${stepper ? "lg:bottom-[4.5rem]" : "lg:bottom-0"} lg:w-[26rem] ${
     cardsSide === "right"
-      ? "lg:inset-y-0 lg:right-8 lg:left-auto lg:w-[26rem]"
-      : "lg:inset-y-0 lg:left-8 lg:right-auto lg:w-[26rem]";
+      ? "lg:right-8 lg:left-auto"
+      : "lg:left-8 lg:right-auto"
+  }`;
 
   return (
     <div
@@ -779,7 +786,7 @@ export default function ScrollAtlas({
         </div>
 
         <div
-          className={`pointer-events-none absolute inset-x-4 bottom-4 flex flex-col items-center gap-4 sm:inset-x-8 sm:bottom-8 lg:flex-row ${cardColumn}`}
+          className={`pointer-events-none absolute inset-x-4 flex flex-col items-center gap-4 sm:inset-x-8 lg:flex-row ${bottomEdge} ${cardColumn}`}
         >
           {hint && !intro && (
             <div
@@ -789,11 +796,6 @@ export default function ScrollAtlas({
               className="lg:hidden"
             >
               {hint}
-            </div>
-          )}
-          {stepper && (
-            <div className="flex w-full justify-end gap-2 lg:hidden">
-              {stepButtons}
             </div>
           )}
           {/* Cards stack in one grid cell on phones so the column is as tall as the tallest card */}
@@ -820,7 +822,7 @@ export default function ScrollAtlas({
             ref={(el) => {
               hintRefs.current[1] = el;
             }}
-            className="pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 lg:block"
+            className={`pointer-events-none absolute left-1/2 hidden -translate-x-1/2 lg:block ${stepper ? BAR_CLEARANCE : "bottom-8"}`}
           >
             {hint}
           </div>
@@ -839,30 +841,15 @@ export default function ScrollAtlas({
                 ref={(el) => {
                   hintRefs.current[2] = el;
                 }}
-                className="absolute bottom-8 left-1/2 -translate-x-1/2 sm:bottom-10"
+                className={`absolute left-1/2 -translate-x-1/2 ${stepper ? BAR_CLEARANCE : "bottom-8 sm:bottom-10"}`}
               >
-                {stepper ? (
-                  <button
-                    type="button"
-                    aria-label="Begin the journey"
-                    onClick={() => stepRef.current?.(1)}
-                    className="pointer-events-auto -m-3 cursor-pointer p-3 transition-opacity hover:opacity-70"
-                  >
-                    {hint}
-                  </button>
-                ) : (
-                  hint
-                )}
+                {hint}
               </div>
             )}
           </div>
         )}
 
-        {stepper && (
-          <div className="absolute right-6 bottom-8 z-10 hidden flex-col gap-2 lg:flex">
-            {stepButtons}
-          </div>
-        )}
+        {stepBar}
 
         {hud}
       </div>

@@ -18,6 +18,18 @@ export const siteVersions = [
       "A low-poly night scene where a plane, train or car travels between the two cities.",
   },
   {
+    href: "/version4-1",
+    label: "3D world round trip",
+    description:
+      "Version 13's whole journey — intro, every leg, wedding and reception stops, live countdown — flown as a scroll-driven three.js night flyover over a low-poly map.",
+  },
+  {
+    href: "/version4-2",
+    label: "3D world · explore",
+    description:
+      "Version 4.1's journey as seven free-roaming worlds: drag to look around, watch the plane, train or car make the trip, and step between stops with an always-visible Next button.",
+  },
+  {
     href: "/version5",
     label: "Boarding pass",
     description:

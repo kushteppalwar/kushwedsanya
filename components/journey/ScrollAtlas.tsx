@@ -83,8 +83,13 @@ interface ScrollAtlasProps {
   stageClassName?: string;
   /** Extra overlay rendered inside the pinned stage (position it absolutely). */
   hud?: ReactNode;
-  /** Scroll prompt shown at the start: above the card on phones, bottom-centre on wide screens. */
+  /** Scroll prompt shown at the start: above the card on phones, bottom-centre on wide screens (or on the intro, if there is one). */
   hint?: ReactNode;
+  /**
+   * Full-screen opening panel that covers the map until the reader scrolls: its
+   * text lifts away first, then the panel dissolves to reveal the map by `until`.
+   */
+  intro?: { content: ReactNode; until: number };
   /** Track length in `--atlas-stop` units (default: one per stop, plus one). */
   trackLength?: number;
   railClassName?: string;
@@ -131,6 +136,7 @@ export default function ScrollAtlas({
   stageClassName = "bg-(--jm-bg)",
   hud,
   hint,
+  intro,
   trackLength = stops.length + 1,
   railClassName = "text-[0.62rem] tracking-[0.3em] text-(--jm-ink) uppercase",
   labelSize = 13,
@@ -151,6 +157,8 @@ export default function ScrollAtlas({
   const milestoneRefs = useRef<(SVGGElement | null)[]>([]);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const hintRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const introRef = useRef<HTMLDivElement>(null);
+  const introTextRef = useRef<HTMLDivElement>(null);
   const onProgressRef = useRef(onProgress);
   useEffect(() => {
     onProgressRef.current = onProgress;
@@ -318,6 +326,19 @@ export default function ScrollAtlas({
         );
       });
 
+      if (intro && introRef.current) {
+        const t = clamp01(progress / intro.until);
+        // Words go first, then the paper itself thins out to show the map
+        const text = 1 - smoothstep(clamp01(t / 0.6));
+        const cover = 1 - smoothstep(clamp01((t - 0.3) / 0.7));
+        introRef.current.style.opacity = String(cover);
+        introRef.current.style.visibility = cover === 0 ? "hidden" : "visible";
+        if (introTextRef.current) {
+          introTextRef.current.style.opacity = String(text);
+          introTextRef.current.style.transform = `translateY(${-(1 - text) * 48}px)`;
+        }
+      }
+
       // The scroll prompt only needs to be there until the first nudge
       const hintOpacity = 1 - clamp01((progress - 0.005) / HINT_FADE);
       hintRefs.current.forEach((el) => {
@@ -380,6 +401,7 @@ export default function ScrollAtlas({
     cardsSide,
     constantScale,
     smoothing,
+    intro,
   ]);
 
   const cardColumn =
@@ -617,7 +639,7 @@ export default function ScrollAtlas({
         <div
           className={`pointer-events-none absolute inset-x-4 bottom-4 flex flex-col items-center gap-4 sm:inset-x-8 sm:bottom-8 lg:flex-row ${cardColumn}`}
         >
-          {hint && (
+          {hint && !intro && (
             <div
               ref={(el) => {
                 hintRefs.current[0] = el;
@@ -646,7 +668,7 @@ export default function ScrollAtlas({
           </div>
         </div>
 
-        {hint && (
+        {hint && !intro && (
           <div
             ref={(el) => {
               hintRefs.current[1] = el;
@@ -654,6 +676,27 @@ export default function ScrollAtlas({
             className="pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 lg:block"
           >
             {hint}
+          </div>
+        )}
+
+        {intro && (
+          <div
+            ref={introRef}
+            className={`pointer-events-none absolute inset-0 flex items-center justify-center px-6 pt-16 pb-28 sm:px-10 ${stageClassName}`}
+          >
+            <div ref={introTextRef} className="w-full max-w-3xl text-center">
+              {intro.content}
+            </div>
+            {hint && (
+              <div
+                ref={(el) => {
+                  hintRefs.current[2] = el;
+                }}
+                className="absolute bottom-8 left-1/2 -translate-x-1/2 sm:bottom-10"
+              >
+                {hint}
+              </div>
+            )}
           </div>
         )}
 

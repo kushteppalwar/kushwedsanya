@@ -31,12 +31,13 @@ interface WorldJourneyProps {
   calendarFileName?: string;
 }
 
-// Scroll-progress phases, in order. The wedding gets a window as long as any
-// leg, and a proper run-up for the zoom in from the world view.
-const HOMES_END = 0.08;
-const KUSH: [number, number] = [0.08, 0.22];
-const INDIA: [number, number] = [0.23, 0.35];
-const WORLD: [number, number] = [0.36, 0.5];
+// Scroll-progress phases, in order. The opening panel dissolves into the map
+// first; the wedding gets a window as long as any leg, and a proper run-up for
+// the zoom in from the world view.
+const INTRO_END = 0.09;
+const KUSH: [number, number] = [0.11, 0.24];
+const INDIA: [number, number] = [0.25, 0.36];
+const WORLD: [number, number] = [0.37, 0.5];
 const WEDDING: [number, number] = [0.58, 0.74];
 const RETURN: [number, number] = [0.76, 0.9];
 const RECEPTION_START = 0.9;
@@ -242,28 +243,6 @@ export default function WorldJourney({
 
   const stops: AtlasStop[] = [
     {
-      key: "homes",
-      from: -1,
-      to: HOMES_END,
-      content: (
-        <>
-          <p className={eyebrow}>Two states, and the whole world</p>
-          <h1 className="mt-2 font-serif text-[clamp(2.2rem,8vw,4rem)] leading-[0.95] text-(--jm-ink) sm:mt-3">
-            {couple.partner1}{" "}
-            <span className="font-script text-[0.75em] text-(--jm-accent)">
-              &amp;
-            </span>{" "}
-            {couple.partner2}
-          </h1>
-          {invitation && (
-            <p className={`${body} italic`}>
-              {invitation.intro} {invitation.request}
-            </p>
-          )}
-        </>
-      ),
-    },
-    {
       key: "kush",
       from: KUSH[0],
       to: KUSH[1] + 0.01,
@@ -387,7 +366,29 @@ export default function WorldJourney({
       camera={camera}
       constantScale
       cardsSide="left"
-      hint={<ScrollHint />}
+      intro={{
+        until: INTRO_END,
+        content: (
+          <>
+            <p className={`${eyebrow} text-balance`}>
+              Two states, and the whole world
+            </p>
+            <h1 className="mt-4 font-serif text-[clamp(3rem,12vw,7rem)] leading-[0.95] text-(--jm-ink) sm:mt-6">
+              {couple.partner1}{" "}
+              <span className="font-script text-[0.75em] text-(--jm-accent)">
+                &amp;
+              </span>{" "}
+              {couple.partner2}
+            </h1>
+            {invitation && (
+              <p className="mx-auto mt-6 max-w-xl font-sans text-xl leading-relaxed font-medium text-(--jm-muted) italic sm:mt-8 sm:text-2xl">
+                {invitation.intro} {invitation.request}
+              </p>
+            )}
+          </>
+        ),
+      }}
+      hint={<ScrollHint variant="column" />}
       trackLength={TRACK_LENGTH}
       railClassName="text-[0.7rem] font-medium tracking-[0.3em] text-(--jm-ink) uppercase sm:text-xs"
       labelSize={15}

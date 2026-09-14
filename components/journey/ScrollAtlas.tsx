@@ -49,6 +49,8 @@ export interface AtlasCameraKeyframe {
   at: number;
   point: Point;
   zoom: number;
+  /** Zoom to use instead when the stage is taller than it is wide. */
+  portraitZoom?: number;
 }
 
 export interface AtlasProgress {
@@ -77,6 +79,8 @@ interface ScrollAtlasProps {
   stageClassName?: string;
   /** Extra overlay rendered inside the pinned stage (position it absolutely). */
   hud?: ReactNode;
+  /** 0–1 share of the remaining distance covered per frame; 1 disables smoothing. */
+  smoothing?: number;
   onProgress?: (info: AtlasProgress) => void;
   ariaLabel: string;
 }
@@ -87,6 +91,10 @@ const DIMMED = 0.3;
 
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
+}
+
+function smoothstep(t: number) {
+  return t * t * (3 - 2 * t);
 }
 
 function windowOpacity(progress: number, from: number, to: number) {
@@ -110,6 +118,7 @@ export default function ScrollAtlas({
   cardsSide = "right",
   stageClassName = "bg-(--jm-bg)",
   hud,
+  smoothing = 0.16,
   onProgress,
   ariaLabel,
 }: ScrollAtlasProps) {
@@ -150,10 +159,10 @@ export default function ScrollAtlas({
         ? focus.landscape
         : { x: MAP_SIZE - focus.landscape.x, y: focus.landscape.y };
 
-    const render = () => {
-      const rect = track.getBoundingClientRect();
-      const progress = clamp01(-rect.top / (rect.height - window.innerHeight));
+    const portrait = () => stage.clientWidth < stage.clientHeight;
 
+    const render = (progress: number) => {
+      const isPortrait = portrait();
       let head: Point = routes[0]?.from ?? { x: MAP_SIZE / 2, y: MAP_SIZE / 2 };
       let activeRoute: AtlasRoute | undefined;
       const headPoints: { point: Point; angle: number; visible: boolean }[] =
@@ -202,24 +211,28 @@ export default function ScrollAtlas({
       let look = head;
       let scale = zoom;
       if (camera && camera.length > 0) {
+        const zoomOf = (frame: AtlasCameraKeyframe) =>
+          isPortrait && frame.portraitZoom !== undefined
+            ? frame.portraitZoom
+            : frame.zoom;
         const next = camera.findIndex((frame) => frame.at >= progress);
         if (next <= 0) {
-          ({ point: look, zoom: scale } =
-            camera[next === 0 ? 0 : camera.length - 1]);
+          const frame = camera[next === 0 ? 0 : camera.length - 1];
+          look = frame.point;
+          scale = zoomOf(frame);
         } else {
           const a = camera[next - 1];
           const b = camera[next];
-          const t = (progress - a.at) / (b.at - a.at || 1);
+          const t = smoothstep(clamp01((progress - a.at) / (b.at - a.at || 1)));
           look = {
             x: a.point.x + (b.point.x - a.point.x) * t,
             y: a.point.y + (b.point.y - a.point.y) * t,
           };
-          scale = a.zoom + (b.zoom - a.zoom) * t;
+          scale = zoomOf(a) + (zoomOf(b) - zoomOf(a)) * t;
         }
       }
 
-      const portrait = stage.clientWidth < stage.clientHeight;
-      const target = portrait ? focus.portrait : landscapeFocus;
+      const target = isPortrait ? focus.portrait : landscapeFocus;
       // Zoomed in, never expose the map's edge; zoomed out, the decor extends past it, so just centre.
       const min = MAP_SIZE - MAP_SIZE * scale;
       const tx =
@@ -285,12 +298,44 @@ export default function ScrollAtlas({
       onProgressRef.current?.({ progress, head, activeRoute });
     };
 
-    render();
-    window.addEventListener("scroll", render, { passive: true });
-    window.addEventListener("resize", render);
+    // Scroll position is the target; what we draw eases toward it each frame so
+    // coarse touch scrolling on phones still reads as one continuous motion.
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const ease = reduced ? 1 : smoothing;
+    const readTarget = () => {
+      const rect = track.getBoundingClientRect();
+      return clamp01(-rect.top / (rect.height - stage.clientHeight));
+    };
+    let target = readTarget();
+    let current = target;
+    let frame = 0;
+
+    const tick = () => {
+      frame = 0;
+      current += (target - current) * ease;
+      if (Math.abs(target - current) < 0.0004) current = target;
+      render(current);
+      if (current !== target) frame = requestAnimationFrame(tick);
+    };
+    const onScroll = () => {
+      target = readTarget();
+      if (document.hidden || ease >= 1) {
+        current = target;
+        render(current);
+        return;
+      }
+      if (!frame) frame = requestAnimationFrame(tick);
+    };
+
+    render(current);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     return () => {
-      window.removeEventListener("scroll", render);
-      window.removeEventListener("resize", render);
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
     };
   }, [
     routes,
@@ -303,6 +348,7 @@ export default function ScrollAtlas({
     focus,
     cardsSide,
     constantScale,
+    smoothing,
   ]);
 
   const cardColumn =
@@ -313,8 +359,8 @@ export default function ScrollAtlas({
   return (
     <div
       ref={trackRef}
-      className="relative"
-      style={{ height: `${(stops.length + 1) * 100}vh` }}
+      className="atlas-track relative"
+      style={{ height: `calc(var(--atlas-stop) * ${stops.length + 1})` }}
     >
       <div
         ref={stageRef}
@@ -548,7 +594,7 @@ export default function ScrollAtlas({
                 className="absolute inset-x-0 bottom-0 lg:top-1/2 lg:bottom-auto lg:-translate-y-1/2"
                 style={{ opacity: 0, visibility: "hidden" }}
               >
-                <div className="rounded-[1.4rem] border border-(--jm-line) bg-(--jm-card) p-6 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:p-8">
+                <div className="rounded-[1.2rem] border border-(--jm-line) bg-(--jm-bg)/95 p-5 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.5)] sm:rounded-[1.4rem] sm:bg-(--jm-card) sm:p-8 sm:backdrop-blur-sm">
                   {stop.content}
                 </div>
               </div>

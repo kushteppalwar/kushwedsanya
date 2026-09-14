@@ -21,6 +21,8 @@ export interface AtlasRoute {
   width?: number;
   /** Opacity of the route before it is drawn. */
   ghost?: number;
+  /** Scroll progress after which the drawn route dims, so later routes stand out. */
+  fadeAfter?: number;
 }
 
 export interface AtlasStop {
@@ -69,6 +71,8 @@ interface ScrollAtlasProps {
   /** Portrait / landscape focal points, in map units. */
   focus?: { portrait: Point; landscape: Point };
   glow?: boolean;
+  /** Keep pins, labels, heads and stroke widths the same size on screen at every zoom. */
+  constantScale?: boolean;
   cardsSide?: "left" | "right";
   stageClassName?: string;
   /** Extra overlay rendered inside the pinned stage (position it absolutely). */
@@ -78,6 +82,8 @@ interface ScrollAtlasProps {
 }
 
 const FADE = 0.05;
+const DIM_SPAN = 0.05;
+const DIMMED = 0.3;
 
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
@@ -100,6 +106,7 @@ export default function ScrollAtlas({
   camera,
   focus = { portrait: { x: 500, y: 430 }, landscape: { x: 400, y: 520 } },
   glow = false,
+  constantScale = false,
   cardsSide = "right",
   stageClassName = "bg-(--jm-bg)",
   hud,
@@ -112,24 +119,36 @@ export default function ScrollAtlas({
   const railRef = useRef<HTMLSpanElement>(null);
   const routeRefs = useRef<(SVGPathElement | null)[]>([]);
   const revealRefs = useRef<(SVGPathElement | null)[]>([]);
+  const drawnRefs = useRef<(SVGGElement | null)[]>([]);
   const headRefs = useRef<(SVGGElement | null)[]>([]);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const pinRefs = useRef<(SVGGElement | null)[]>([]);
+  const placeRefs = useRef<(SVGGElement | null)[]>([]);
   const milestoneRefs = useRef<(SVGGElement | null)[]>([]);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const onProgressRef = useRef(onProgress);
   useEffect(() => {
     onProgressRef.current = onProgress;
   }, [onProgress]);
 
-  const curves = useMemo(() => routes.map((route) => routeCurve(route.from, route.to, route.bow)), [routes]);
+  const curves = useMemo(
+    () => routes.map((route) => routeCurve(route.from, route.to, route.bow)),
+    [routes],
+  );
+  const strokeEffect = constantScale ? "non-scaling-stroke" : undefined;
 
   useEffect(() => {
     const track = trackRef.current;
     const stage = stageRef.current;
     if (!track || !stage) return;
 
-    const lengths = routeRefs.current.map((path) => path?.getTotalLength() ?? 0);
+    const lengths = routeRefs.current.map(
+      (path) => path?.getTotalLength() ?? 0,
+    );
     // Landscape orientation puts the focal point on the side away from the cards.
-    const landscapeFocus = cardsSide === "right" ? focus.landscape : { x: MAP_SIZE - focus.landscape.x, y: focus.landscape.y };
+    const landscapeFocus =
+      cardsSide === "right"
+        ? focus.landscape
+        : { x: MAP_SIZE - focus.landscape.x, y: focus.landscape.y };
 
     const render = () => {
       const rect = track.getBoundingClientRect();
@@ -137,24 +156,40 @@ export default function ScrollAtlas({
 
       let head: Point = routes[0]?.from ?? { x: MAP_SIZE / 2, y: MAP_SIZE / 2 };
       let activeRoute: AtlasRoute | undefined;
+      const headPoints: { point: Point; angle: number; visible: boolean }[] =
+        [];
 
       routes.forEach((route, index) => {
         const [start, end] = route.window;
         const local = clamp01((progress - start) / (end - start));
         const path = routeRefs.current[index];
         const length = lengths[index];
-        revealRefs.current[index]?.setAttribute("stroke-dashoffset", String(1 - local));
+        revealRefs.current[index]?.setAttribute(
+          "stroke-dashoffset",
+          String(1 - local),
+        );
+
+        const drawn = drawnRefs.current[index];
+        if (drawn) {
+          const dim =
+            route.fadeAfter === undefined
+              ? 0
+              : clamp01((progress - route.fadeAfter) / DIM_SPAN);
+          drawn.style.opacity = String(1 - dim * (1 - DIMMED));
+        }
 
         if (path && length) {
           const distance = local * length;
           const point = path.getPointAtLength(distance);
           const ahead = path.getPointAtLength(Math.min(length, distance + 2));
-          const angle = (Math.atan2(ahead.y - point.y, ahead.x - point.x) * 180) / Math.PI;
-          const headEl = headRefs.current[index];
-          if (headEl) {
-            headEl.setAttribute("transform", `translate(${point.x} ${point.y}) rotate(${angle})`);
-            headEl.style.opacity = local > 0 && local < 1 ? "1" : local >= 1 && route.head === "plane" ? "1" : "0";
-          }
+          const angle =
+            (Math.atan2(ahead.y - point.y, ahead.x - point.x) * 180) / Math.PI;
+          const visible =
+            (local > 0 && local < 1) ||
+            (local >= 1 &&
+              route.head === "plane" &&
+              route.fadeAfter === undefined);
+          headPoints[index] = { point, angle, visible };
           if (progress >= start && progress <= end) {
             head = point;
             activeRoute = route;
@@ -169,28 +204,71 @@ export default function ScrollAtlas({
       if (camera && camera.length > 0) {
         const next = camera.findIndex((frame) => frame.at >= progress);
         if (next <= 0) {
-          ({ point: look, zoom: scale } = camera[next === 0 ? 0 : camera.length - 1]);
+          ({ point: look, zoom: scale } =
+            camera[next === 0 ? 0 : camera.length - 1]);
         } else {
           const a = camera[next - 1];
           const b = camera[next];
           const t = (progress - a.at) / (b.at - a.at || 1);
-          look = { x: a.point.x + (b.point.x - a.point.x) * t, y: a.point.y + (b.point.y - a.point.y) * t };
+          look = {
+            x: a.point.x + (b.point.x - a.point.x) * t,
+            y: a.point.y + (b.point.y - a.point.y) * t,
+          };
           scale = a.zoom + (b.zoom - a.zoom) * t;
         }
       }
 
       const portrait = stage.clientWidth < stage.clientHeight;
       const target = portrait ? focus.portrait : landscapeFocus;
+      // Zoomed in, never expose the map's edge; zoomed out, the decor extends past it, so just centre.
       const min = MAP_SIZE - MAP_SIZE * scale;
-      const tx = Math.min(0, Math.max(min, target.x - scale * look.x));
-      const ty = Math.min(0, Math.max(min, target.y - scale * look.y));
-      cameraRef.current?.setAttribute("transform", `translate(${tx} ${ty}) scale(${scale})`);
+      const tx =
+        scale < 1
+          ? target.x - scale * look.x
+          : Math.min(0, Math.max(min, target.x - scale * look.x));
+      const ty =
+        scale < 1
+          ? target.y - scale * look.y
+          : Math.min(0, Math.max(min, target.y - scale * look.y));
+      cameraRef.current?.setAttribute(
+        "transform",
+        `translate(${tx} ${ty}) scale(${scale})`,
+      );
+
+      // Counter-scale so markers keep their on-screen size while the camera zooms.
+      const k = constantScale ? 1 / scale : 1;
+      headPoints.forEach((headPoint, index) => {
+        const headEl = headRefs.current[index];
+        if (!headEl || !headPoint) return;
+        headEl.setAttribute(
+          "transform",
+          `translate(${headPoint.point.x} ${headPoint.point.y}) rotate(${headPoint.angle}) scale(${k})`,
+        );
+        headEl.style.opacity = headPoint.visible ? "1" : "0";
+      });
+      pins.forEach((pin, index) => {
+        pinRefs.current[index]?.setAttribute(
+          "transform",
+          `translate(${pin.point.x} ${pin.point.y}) scale(${k})`,
+        );
+      });
+      places.forEach((place, index) => {
+        placeRefs.current[index]?.setAttribute(
+          "transform",
+          `translate(${place.point.x} ${place.point.y}) scale(${k})`,
+        );
+      });
+      milestones.forEach((milestone, index) => {
+        const el = milestoneRefs.current[index];
+        if (!el) return;
+        el.setAttribute(
+          "transform",
+          `translate(${milestone.point.x} ${milestone.point.y}) scale(${k})`,
+        );
+        el.style.opacity = progress >= milestone.at - 0.02 ? "1" : "0.35";
+      });
 
       if (railRef.current) railRef.current.style.left = `${progress * 100}%`;
-
-      milestoneRefs.current.forEach((milestone, index) => {
-        if (milestone) milestone.style.opacity = progress >= milestones[index].at - 0.02 ? "1" : "0.35";
-      });
 
       stops.forEach((stop, index) => {
         const card = cardRefs.current[index];
@@ -200,7 +278,7 @@ export default function ScrollAtlas({
         card.style.visibility = opacity === 0 ? "hidden" : "visible";
         (card.firstElementChild as HTMLElement | null)?.style.setProperty(
           "transform",
-          `translateY(${(1 - opacity) * 24}px)`
+          `translateY(${(1 - opacity) * 24}px)`,
         );
       });
 
@@ -214,7 +292,18 @@ export default function ScrollAtlas({
       window.removeEventListener("scroll", render);
       window.removeEventListener("resize", render);
     };
-  }, [routes, stops, milestones, zoom, camera, focus, cardsSide]);
+  }, [
+    routes,
+    stops,
+    pins,
+    places,
+    milestones,
+    zoom,
+    camera,
+    focus,
+    cardsSide,
+    constantScale,
+  ]);
 
   const cardColumn =
     cardsSide === "right"
@@ -222,8 +311,15 @@ export default function ScrollAtlas({
       : "lg:inset-y-0 lg:left-8 lg:right-auto lg:w-[26rem]";
 
   return (
-    <div ref={trackRef} className="relative" style={{ height: `${(stops.length + 1) * 100}vh` }}>
-      <div ref={stageRef} className={`sticky top-0 h-svh overflow-hidden ${stageClassName}`}>
+    <div
+      ref={trackRef}
+      className="relative"
+      style={{ height: `${(stops.length + 1) * 100}vh` }}
+    >
+      <div
+        ref={stageRef}
+        className={`sticky top-0 h-svh overflow-hidden ${stageClassName}`}
+      >
         <svg
           viewBox={`0 0 ${MAP_SIZE} ${MAP_SIZE}`}
           preserveAspectRatio="xMidYMid slice"
@@ -243,32 +339,53 @@ export default function ScrollAtlas({
                   fill="none"
                   stroke="white"
                   strokeWidth="60"
-                  strokeLinecap="round"
+                  strokeLinecap="butt"
                   strokeDasharray="1"
                   strokeDashoffset="1"
                 />
               </mask>
             ))}
             {glow && (
-              <filter id="atlas-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <filter
+                id="atlas-glow"
+                x="-20%"
+                y="-20%"
+                width="140%"
+                height="140%"
+              >
                 <feGaussianBlur stdDeviation="6" />
               </filter>
             )}
             <radialGradient id="atlas-vignette" cx="50%" cy="50%" r="70%">
-              <stop offset="55%" stopColor="var(--jm-bg-deep)" stopOpacity="0" />
-              <stop offset="100%" stopColor="var(--jm-bg-deep)" stopOpacity="0.85" />
+              <stop
+                offset="55%"
+                stopColor="var(--jm-bg-deep)"
+                stopOpacity="0"
+              />
+              <stop
+                offset="100%"
+                stopColor="var(--jm-bg-deep)"
+                stopOpacity="0.85"
+              />
             </radialGradient>
           </defs>
 
           <g ref={cameraRef}>
             {decor}
 
-            {places.map((place) => (
-              <g key={place.label} opacity="0.7">
-                <circle cx={place.point.x} cy={place.point.y} r="4" fill="var(--jm-ink)" />
+            {places.map((place, index) => (
+              <g
+                key={place.label}
+                ref={(el) => {
+                  placeRefs.current[index] = el;
+                }}
+                transform={`translate(${place.point.x} ${place.point.y})`}
+                opacity="0.7"
+              >
+                <circle r="4" fill="var(--jm-ink)" />
                 <text
-                  x={place.point.x + 9}
-                  y={place.point.y + 4}
+                  x="9"
+                  y="4"
                   fill="var(--jm-muted)"
                   fontFamily="var(--font-sans)"
                   fontSize="13"
@@ -291,8 +408,14 @@ export default function ScrollAtlas({
                   strokeWidth="1.2"
                   strokeDasharray="3 9"
                   opacity={route.ghost ?? 0.3}
+                  vectorEffect={strokeEffect}
                 />
-                <g mask={`url(#atlas-reveal-${route.id})`}>
+                <g
+                  ref={(el) => {
+                    drawnRefs.current[index] = el;
+                  }}
+                  mask={`url(#atlas-reveal-${route.id})`}
+                >
                   {glow && (
                     <path
                       d={curves[index].d}
@@ -302,6 +425,7 @@ export default function ScrollAtlas({
                       strokeLinecap="round"
                       opacity="0.45"
                       filter="url(#atlas-glow)"
+                      vectorEffect={strokeEffect}
                     />
                   )}
                   <path
@@ -311,6 +435,7 @@ export default function ScrollAtlas({
                     strokeWidth={(route.width ?? 3.5) * 4}
                     opacity="0.1"
                     strokeLinecap="round"
+                    vectorEffect={strokeEffect}
                   />
                   <path
                     d={curves[index].d}
@@ -319,6 +444,7 @@ export default function ScrollAtlas({
                     strokeWidth={route.width ?? 3.5}
                     strokeLinecap="round"
                     strokeDasharray="10 9"
+                    vectorEffect={strokeEffect}
                   />
                 </g>
               </g>
@@ -330,12 +456,18 @@ export default function ScrollAtlas({
                 ref={(el) => {
                   milestoneRefs.current[index] = el;
                 }}
+                transform={`translate(${milestone.point.x} ${milestone.point.y})`}
                 style={{ opacity: 0.35, transition: "opacity 0.4s" }}
               >
-                <circle cx={milestone.point.x} cy={milestone.point.y} r="8" fill="var(--jm-bg)" stroke="var(--jm-accent)" strokeWidth="2.5" />
+                <circle
+                  r="8"
+                  fill="var(--jm-bg)"
+                  stroke="var(--jm-accent)"
+                  strokeWidth="2.5"
+                />
                 <text
-                  x={milestone.point.x + 16}
-                  y={milestone.point.y + 5}
+                  x="16"
+                  y="5"
                   fill="var(--jm-ink)"
                   fontFamily="var(--font-sans)"
                   fontSize="15"
@@ -346,8 +478,16 @@ export default function ScrollAtlas({
               </g>
             ))}
 
-            {pins.map((pin) => (
-              <Pin key={pin.stop.city} point={pin.point} stop={pin.stop} align={pin.align} />
+            {pins.map((pin, index) => (
+              <g
+                key={pin.stop.city}
+                ref={(el) => {
+                  pinRefs.current[index] = el;
+                }}
+                transform={`translate(${pin.point.x} ${pin.point.y})`}
+              >
+                <Pin point={{ x: 0, y: 0 }} stop={pin.stop} align={pin.align} />
+              </g>
             ))}
 
             {routes.map((route, index) => (
@@ -375,7 +515,12 @@ export default function ScrollAtlas({
             ))}
           </g>
 
-          <rect width={MAP_SIZE} height={MAP_SIZE} fill="url(#atlas-vignette)" pointerEvents="none" />
+          <rect
+            width={MAP_SIZE}
+            height={MAP_SIZE}
+            fill="url(#atlas-vignette)"
+            pointerEvents="none"
+          />
         </svg>
 
         <div className="pointer-events-none absolute inset-x-5 top-5 flex items-center gap-3 text-[0.62rem] tracking-[0.3em] text-(--jm-ink) uppercase sm:inset-x-8 sm:top-7">
@@ -390,7 +535,9 @@ export default function ScrollAtlas({
           <span>{rail.to}</span>
         </div>
 
-        <div className={`pointer-events-none absolute inset-x-4 bottom-4 sm:inset-x-8 sm:bottom-8 lg:flex lg:items-center ${cardColumn}`}>
+        <div
+          className={`pointer-events-none absolute inset-x-4 bottom-4 sm:inset-x-8 sm:bottom-8 lg:flex lg:items-center ${cardColumn}`}
+        >
           <div className="relative w-full">
             {stops.map((stop, index) => (
               <div

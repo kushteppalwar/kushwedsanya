@@ -11,6 +11,9 @@ export interface Bounds {
 export const MAP_BOUNDS: Bounds = { west: 68, east: 84, south: 14, north: 32 };
 /** The whole subcontinent, for maps that show guests arriving from everywhere. */
 export const INDIA_BOUNDS: Bounds = { west: 67, east: 98, south: 5, north: 37 };
+/** Everywhere guests fly in from; squeezed into the square viewBox, so it is
+    stretched north–south — fine for a map that only plots points and arcs. */
+export const WORLD_BOUNDS: Bounds = { west: -130, east: 160, south: -50, north: 80 };
 export const MAP_SIZE = 1000;
 
 /** Equirectangular projection into the map's 1000×1000 viewBox. */
@@ -20,6 +23,10 @@ export function project(stop: Pick<JourneyStop, "lat" | "lon">, bounds: Bounds =
     x: ((stop.lon - west) / (east - west)) * MAP_SIZE,
     y: ((north - stop.lat) / (north - south)) * MAP_SIZE,
   };
+}
+
+export function withinBounds(place: Pick<JourneyStop, "lat" | "lon">, bounds: Bounds) {
+  return place.lon >= bounds.west && place.lon <= bounds.east && place.lat >= bounds.south && place.lat <= bounds.north;
 }
 
 /** Great-circle distance in kilometres. */

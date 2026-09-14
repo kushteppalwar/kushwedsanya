@@ -232,7 +232,7 @@ export default function ScrollJourney({ config, directionsUrl, calendarHref, cal
                 fill="none"
                 stroke="white"
                 strokeWidth="60"
-                strokeLinecap="round"
+                strokeLinecap="butt"
                 strokeDasharray="1"
                 strokeDashoffset="1"
               />

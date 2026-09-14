@@ -63,7 +63,7 @@ export const siteVersions = [
     href: "/version13",
     label: "World round trip · readable",
     description:
-      "Version 12 with a scroll-down prompt, larger phone-friendly type, a longer wedding stop and a live countdown to the ceremony.",
+      "Version 12 with a full-screen intro that dissolves into the map, larger phone-friendly type, previous/next stop buttons, a longer wedding stop and a live countdown to the ceremony.",
   },
   {
     href: "/version9",

@@ -7,6 +7,7 @@ import EventTimeline from "@/components/v12/EventTimeline";
 import { timelineStops } from "@/lib/timeline";
 import Destination from "@/components/v3/Destination";
 import JourneyFooter from "@/components/v3/JourneyFooter";
+import Loader from "@/components/v12/Loader";
 
 const config = getEventConfig("wedding")!;
 const reception = getEventConfig("reception");
@@ -37,6 +38,11 @@ export default function Version12() {
 
   return (
     <div className="journey-day min-h-svh bg-(--jm-bg) font-sans text-(--jm-ink)">
+      <Loader
+        partner1={couple.partner1}
+        partner2={couple.partner2}
+        hashtag={config.hashtag}
+      />
       <main>
         <WorldJourney
           config={config}

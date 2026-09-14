@@ -83,6 +83,13 @@ interface ScrollAtlasProps {
   stageClassName?: string;
   /** Extra overlay rendered inside the pinned stage (position it absolutely). */
   hud?: ReactNode;
+  /** Scroll prompt shown at the start: above the card on phones, bottom-centre on wide screens. */
+  hint?: ReactNode;
+  /** Track length in `--atlas-stop` units (default: one per stop, plus one). */
+  trackLength?: number;
+  railClassName?: string;
+  /** Font size of the place labels, in map units. */
+  labelSize?: number;
   /** 0–1 share of the remaining distance covered per frame; 1 disables smoothing. */
   smoothing?: number;
   onProgress?: (info: AtlasProgress) => void;
@@ -90,6 +97,7 @@ interface ScrollAtlasProps {
 }
 
 const FADE = 0.05;
+const HINT_FADE = 0.03;
 const DIM_SPAN = 0.05;
 const DIMMED = 0.3;
 
@@ -122,6 +130,10 @@ export default function ScrollAtlas({
   cardsSide = "right",
   stageClassName = "bg-(--jm-bg)",
   hud,
+  hint,
+  trackLength = stops.length + 1,
+  railClassName = "text-[0.62rem] tracking-[0.3em] text-(--jm-ink) uppercase",
+  labelSize = 13,
   smoothing = 0.16,
   onProgress,
   ariaLabel,
@@ -138,6 +150,7 @@ export default function ScrollAtlas({
   const placeRefs = useRef<(SVGGElement | null)[]>([]);
   const milestoneRefs = useRef<(SVGGElement | null)[]>([]);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const hintRefs = useRef<(HTMLDivElement | null)[]>([]);
   const onProgressRef = useRef(onProgress);
   useEffect(() => {
     onProgressRef.current = onProgress;
@@ -305,6 +318,14 @@ export default function ScrollAtlas({
         );
       });
 
+      // The scroll prompt only needs to be there until the first nudge
+      const hintOpacity = 1 - clamp01((progress - 0.005) / HINT_FADE);
+      hintRefs.current.forEach((el) => {
+        if (!el) return;
+        el.style.opacity = String(hintOpacity);
+        el.style.visibility = hintOpacity === 0 ? "hidden" : "visible";
+      });
+
       onProgressRef.current?.({ progress, head, activeRoute });
     };
 
@@ -370,7 +391,7 @@ export default function ScrollAtlas({
     <div
       ref={trackRef}
       className="atlas-track relative"
-      style={{ height: `calc(var(--atlas-stop) * ${stops.length + 1})` }}
+      style={{ height: `calc(var(--atlas-stop) * ${trackLength})` }}
     >
       <div
         ref={stageRef}
@@ -444,7 +465,7 @@ export default function ScrollAtlas({
                   y="4"
                   fill="var(--jm-muted)"
                   fontFamily="var(--font-sans)"
-                  fontSize="13"
+                  fontSize={labelSize}
                   letterSpacing="2"
                 >
                   {place.label.toUpperCase()}
@@ -579,7 +600,9 @@ export default function ScrollAtlas({
           />
         </svg>
 
-        <div className="pointer-events-none absolute inset-x-5 top-5 flex items-center gap-3 text-[0.62rem] tracking-[0.3em] text-(--jm-ink) uppercase sm:inset-x-8 sm:top-7">
+        <div
+          className={`pointer-events-none absolute inset-x-5 top-5 flex items-center gap-3 sm:inset-x-8 sm:top-7 ${railClassName}`}
+        >
           <span>{rail.from}</span>
           <span className="relative h-px flex-1 bg-(--jm-ink)/25">
             <span
@@ -592,16 +615,27 @@ export default function ScrollAtlas({
         </div>
 
         <div
-          className={`pointer-events-none absolute inset-x-4 bottom-4 sm:inset-x-8 sm:bottom-8 lg:flex lg:items-center ${cardColumn}`}
+          className={`pointer-events-none absolute inset-x-4 bottom-4 flex flex-col items-center gap-4 sm:inset-x-8 sm:bottom-8 lg:flex-row ${cardColumn}`}
         >
-          <div className="relative w-full">
+          {hint && (
+            <div
+              ref={(el) => {
+                hintRefs.current[0] = el;
+              }}
+              className="lg:hidden"
+            >
+              {hint}
+            </div>
+          )}
+          {/* Cards stack in one grid cell on phones so the column is as tall as the tallest card */}
+          <div className="relative grid w-full items-end lg:block">
             {stops.map((stop, index) => (
               <div
                 key={stop.key}
                 ref={(el) => {
                   cardRefs.current[index] = el;
                 }}
-                className="absolute inset-x-0 bottom-0 lg:top-1/2 lg:bottom-auto lg:-translate-y-1/2"
+                className="[grid-area:1/1] lg:absolute lg:inset-x-0 lg:top-1/2 lg:-translate-y-1/2"
                 style={{ opacity: 0, visibility: "hidden" }}
               >
                 <div className="rounded-[1.2rem] border border-(--jm-line) bg-(--jm-bg)/95 p-5 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.5)] sm:rounded-[1.4rem] sm:bg-(--jm-card) sm:p-8 sm:backdrop-blur-sm">
@@ -611,6 +645,17 @@ export default function ScrollAtlas({
             ))}
           </div>
         </div>
+
+        {hint && (
+          <div
+            ref={(el) => {
+              hintRefs.current[1] = el;
+            }}
+            className="pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 lg:block"
+          >
+            {hint}
+          </div>
+        )}
 
         {hud}
       </div>

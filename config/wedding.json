@@ -30,10 +30,10 @@
     },
     "guestOrigins": [
       {
-        "city": "Mumbai",
+        "city": "Nagpur",
         "state": "Maharashtra",
-        "lat": 19.076,
-        "lon": 72.8777
+        "lat": 21.1458,
+        "lon": 79.0882
       },
       {
         "city": "Bengaluru",
@@ -48,46 +48,28 @@
         "lon": 78.4867
       },
       {
-        "city": "Chennai",
-        "state": "Tamil Nadu",
-        "lat": 13.0827,
-        "lon": 80.2707
+        "city": "Switzerland",
+        "state": "Europe",
+        "lat": 46.8182,
+        "lon": 8.2275
       },
       {
-        "city": "Kolkata",
-        "state": "West Bengal",
-        "lat": 22.5726,
-        "lon": 88.3639
+        "city": "USA",
+        "state": "North America",
+        "lat": 39.8283,
+        "lon": -98.5795
       },
       {
-        "city": "Jaipur",
-        "state": "Rajasthan",
-        "lat": 26.9124,
-        "lon": 75.7873
+        "city": "Canada",
+        "state": "North America",
+        "lat": 56.1304,
+        "lon": -106.3468
       },
       {
-        "city": "Ahmedabad",
-        "state": "Gujarat",
-        "lat": 23.0225,
-        "lon": 72.5714
-      },
-      {
-        "city": "Chandigarh",
-        "state": "Chandigarh",
-        "lat": 30.7333,
-        "lon": 76.7794
-      },
-      {
-        "city": "Lucknow",
-        "state": "Uttar Pradesh",
-        "lat": 26.8467,
-        "lon": 80.9462
-      },
-      {
-        "city": "Nagpur",
-        "state": "Maharashtra",
-        "lat": 21.1458,
-        "lon": 79.0882
+        "city": "Australia",
+        "state": "Oceania",
+        "lat": -25.2744,
+        "lon": 133.7751
       }
     ]
   },

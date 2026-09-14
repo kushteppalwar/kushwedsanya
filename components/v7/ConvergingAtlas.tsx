@@ -2,7 +2,7 @@ import ScrollAtlas, { type AtlasRoute, type AtlasStop } from "@/components/journ
 import { MapDecor } from "@/components/v3/JourneyMap";
 import { jmButtonOutline, jmButtonPrimary } from "@/components/v3/JourneyHero";
 import type { EventConfig } from "@/lib/content";
-import { INDIA_BOUNDS, distanceKm, project } from "@/lib/geo";
+import { INDIA_BOUNDS, distanceKm, project, withinBounds } from "@/lib/geo";
 
 interface ConvergingAtlasProps {
   config: EventConfig;
@@ -17,7 +17,8 @@ const GUEST_SPAN: [number, number] = [0.44, 0.82];
 export default function ConvergingAtlas({ config, directionsUrl, calendarHref, calendarFileName }: ConvergingAtlasProps) {
   const { couple, weddingDate, location, invitation, journey, schedule = [] } = config;
   if (!journey) return null;
-  const { from, to, guestOrigins = [] } = journey;
+  const { from, to } = journey;
+  const guestOrigins = (journey.guestOrigins ?? []).filter((place) => withinBounds(place, INDIA_BOUNDS));
 
   const origin = project(from, INDIA_BOUNDS);
   const venue = project(to, INDIA_BOUNDS);

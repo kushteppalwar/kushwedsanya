@@ -3,7 +3,7 @@ import { MapDecor } from "@/components/v3/JourneyMap";
 import { jmButtonOutline, jmButtonPrimary } from "@/components/v3/JourneyHero";
 import { CeremonyIcon } from "@/components/v2/Ornaments";
 import type { EventConfig } from "@/lib/content";
-import { INDIA_BOUNDS, distanceKm, project } from "@/lib/geo";
+import { INDIA_BOUNDS, distanceKm, project, withinBounds } from "@/lib/geo";
 
 interface RoundTripAtlasProps {
   config: EventConfig;
@@ -30,7 +30,8 @@ export default function RoundTripAtlas({
 }: RoundTripAtlasProps) {
   const { couple, weddingDate, location, invitation, journey, schedule = [] } = config;
   if (!journey) return null;
-  const { from, to, guestOrigins = [] } = journey;
+  const { from, to } = journey;
+  const guestOrigins = (journey.guestOrigins ?? []).filter((place) => withinBounds(place, INDIA_BOUNDS));
 
   const origin = project(from, INDIA_BOUNDS);
   const venue = project(to, INDIA_BOUNDS);

@@ -33,16 +33,7 @@ export default function Version11() {
   const calendarFileName =
     `${couple.partner1}-${couple.partner2}-${config.eventName}.ics`.toLowerCase();
 
-  const stops = timelineStops(
-    schedule,
-    location,
-    reception && {
-      name: reception.eventName,
-      date: reception.weddingDate.display,
-      venue: reception.location.venue,
-      city: reception.location.city,
-    },
-  );
+  const stops = timelineStops(config, reception);
 
   return (
     <div className="journey-day min-h-svh bg-(--jm-bg) font-sans text-(--jm-ink)">

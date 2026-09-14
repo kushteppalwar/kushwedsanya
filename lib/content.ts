@@ -1,11 +1,24 @@
 import weddingConfig from "@/config/wedding.json";
 import receptionConfig from "@/config/reception.json";
 
+export interface Attire {
+  women?: string;
+  men?: string;
+  /** Guidance that applies to everyone. */
+  all?: string;
+}
+
 export interface ScheduleEvent {
   name: string;
   time: string;
   /** Local start time in the venue's time zone, as "YYYY-MM-DDTHH:mm". */
   start?: string;
+  /** Hall or spot within the venue. */
+  hall?: string;
+  /** Icon key when the event name doesn't map to one on its own. */
+  icon?: string;
+  /** Suggested (never required) dress code. */
+  attire?: Attire;
 }
 
 export interface ScheduleDay {

@@ -1,41 +1,49 @@
-import type { ScheduleDay } from "@/lib/content";
+import type { Attire, EventConfig, ScheduleDay } from "@/lib/content";
 
 export interface TimelineStop {
   /** Group label shown on the line when it changes, e.g. "Day 1". */
   group: string;
   date: string;
   name: string;
+  icon?: string;
   time?: string;
+  /** Hall or spot within the venue. */
+  hall?: string;
   venue?: string;
   city: string;
+  attire?: Attire;
 }
 
-/** Flattens the wedding schedule (plus an optional reception) into timeline stops. */
-export function timelineStops(
-  days: ScheduleDay[],
-  wedding: { venue?: string; city: string },
-  reception?: { name: string; date: string; venue?: string; city: string },
-): TimelineStop[] {
-  const ceremonies = days.flatMap((day) =>
+function stopsOf(days: ScheduleDay[], location: { venue?: string; city: string }): TimelineStop[] {
+  return days.flatMap((day) =>
     day.events.map((event) => ({
       group: day.day,
       date: day.date ?? "",
       name: event.name,
+      icon: event.icon,
       time: event.time,
-      venue: wedding.venue,
-      city: wedding.city,
+      hall: event.hall,
+      venue: location.venue,
+      city: location.city,
+      attire: event.attire,
     })),
   );
-  return reception
-    ? [
-        ...ceremonies,
+}
+
+/** Flattens the wedding schedule, followed by the reception's, into timeline stops. */
+export function timelineStops(wedding: EventConfig, reception?: EventConfig): TimelineStop[] {
+  const stops = stopsOf(wedding.schedule ?? [], wedding.location);
+  if (!reception) return stops;
+  const receptionStops = reception.schedule?.length
+    ? stopsOf(reception.schedule, reception.location)
+    : [
         {
-          group: reception.name,
-          date: reception.date,
-          name: reception.name,
-          venue: reception.venue,
-          city: reception.city,
+          group: reception.eventName,
+          date: reception.weddingDate.display,
+          name: reception.eventName,
+          venue: reception.location.venue,
+          city: reception.location.city,
         },
-      ]
-    : ceremonies;
+      ];
+  return [...stops, ...receptionStops];
 }

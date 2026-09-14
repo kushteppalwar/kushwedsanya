@@ -1,6 +1,6 @@
 {
   "eventName": "Wedding",
-  "hashtag": "#KushWedsSanya",
+  "hashtag": "#Groovingtothesummit",
   "invitation": {
     "intro": "Together with their families",
     "request": "request the pleasure of your company at the celebration of their wedding"
@@ -88,14 +88,25 @@
       "date": "November 23",
       "events": [
         {
-          "name": "Sakharpuda",
-          "time": "1:00 PM",
-          "start": "2026-11-23T13:00"
+          "name": "Seemant Poojan & Mehendi Ceremony",
+          "icon": "mehendi",
+          "time": "1:00 PM onwards",
+          "start": "2026-11-23T13:00",
+          "hall": "PACIFIC – II hall",
+          "attire": {
+            "women": "Elegant silk-bordered sarees",
+            "men": "Classic kurta paijama or dhoti"
+          }
         },
         {
           "name": "Sangeet",
-          "time": "7:00 PM",
-          "start": "2026-11-23T19:00"
+          "time": "7:30 PM onwards",
+          "start": "2026-11-23T19:30",
+          "hall": "PACIFIC – II hall",
+          "attire": {
+            "women": "Fusion ensembles and elegant gowns",
+            "men": "Contemporary Indo-Western or sharp Western silhouettes"
+          }
         }
       ]
     },
@@ -105,13 +116,21 @@
       "events": [
         {
           "name": "Haldi",
-          "time": "10:00 AM",
-          "start": "2026-11-24T10:00"
+          "time": "10:00 AM onwards",
+          "start": "2026-11-24T10:00",
+          "hall": "Pool side",
+          "attire": {
+            "all": "Radiant shades of yellow"
+          }
         },
         {
           "name": "Wedding",
-          "time": "7:00 PM",
-          "start": "2026-11-24T19:00"
+          "time": "7:00 PM onwards",
+          "start": "2026-11-24T19:00",
+          "hall": "PACIFIC – I",
+          "attire": {
+            "all": "Traditional wear"
+          }
         }
       ]
     }

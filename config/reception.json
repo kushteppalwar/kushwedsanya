@@ -23,5 +23,22 @@
   "closing": {
     "message": "Your presence and blessings are all we ask for.",
     "signoff": "We can't wait to celebrate with you!"
-  }
+  },
+  "hashtag": "#Groovingtothesummit",
+  "schedule": [
+    {
+      "day": "Reception",
+      "date": "November 28",
+      "events": [
+        {
+          "name": "Reception",
+          "time": "7:00 PM onwards",
+          "start": "2026-11-28T19:00",
+          "attire": {
+            "all": "Evening wear"
+          }
+        }
+      ]
+    }
+  ]
 }

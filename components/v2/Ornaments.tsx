@@ -127,11 +127,38 @@ icons.reception = (
   </>
 );
 
+icons.mehendi = (
+  <>
+    <path d="M13.5 3.5 c 4.5 1, 6 5.5, 4 9.5 c -1.8 3.6, -5.5 5, -7.5 8 c -1.2 -3.8, -5 -6, -4.2 -10.5 c 0.7 -4, 4 -6.5, 7.7 -7z" />
+    <path d="M12.5 8 c 2.3 0.5, 3 3, 2 5 c -1 2, -3 2.6, -4 4" />
+    <circle cx="8.5" cy="9.5" r="0.7" fill="currentColor" stroke="none" />
+    <circle cx="16.5" cy="7.5" r="0.7" fill="currentColor" stroke="none" />
+    <circle cx="10.5" cy="17.5" r="0.7" fill="currentColor" stroke="none" />
+  </>
+);
+
 const fallbackIcon = (
   <path d="M12 3 l 2.2 6.8 L 21 12 l -6.8 2.2 L 12 21 l -2.2 -6.8 L 3 12 l 6.8 -2.2z" />
 );
 
-export function CeremonyIcon({ name, className = "" }: { name: string; className?: string }) {
+/** Picks an icon by explicit key, then by keywords in the event name. */
+function iconFor(name: string, icon?: string) {
+  const key = (icon ?? "").toLowerCase();
+  if (icons[key]) return icons[key];
+  const lower = name.toLowerCase();
+  const match = Object.keys(icons).find((k) => lower.includes(k));
+  return match ? icons[match] : fallbackIcon;
+}
+
+export function CeremonyIcon({
+  name,
+  icon,
+  className = "",
+}: {
+  name: string;
+  icon?: string;
+  className?: string;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -143,7 +170,7 @@ export function CeremonyIcon({ name, className = "" }: { name: string; className
       className={className}
       aria-hidden="true"
     >
-      {icons[name.toLowerCase()] ?? fallbackIcon}
+      {iconFor(name, icon)}
     </svg>
   );
 }

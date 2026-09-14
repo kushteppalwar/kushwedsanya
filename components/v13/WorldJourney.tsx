@@ -49,6 +49,8 @@ const WORLD_ZOOM = 0.62;
 const WORLD_ZOOM_PORTRAIT = 0.38;
 /** Opacity inbound routes settle to once the homeward leg begins. */
 const FADED = 0.08;
+/** Below this zoom the Indian cities crowd Delhi, so their labels (and Pune's pin) fade out. */
+const LABEL_ZOOM = 1.2;
 
 function centroid(points: Point[]) {
   const sum = points.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), {
@@ -343,12 +345,14 @@ export default function WorldJourney({
       routes={routes}
       stops={stops}
       pins={[
-        { point: origin, stop: from, align: "end" },
+        // Pune sits on top of Delhi once the world is in view, so it steps aside
+        { point: origin, stop: from, align: "end", minZoom: LABEL_ZOOM },
         { point: venue, stop: to, align: "start" },
       ]}
       places={guestOrigins.map((place) => ({
         point: at(place),
         label: place.city,
+        minZoom: withinBounds(place, INDIA_BOUNDS) ? LABEL_ZOOM : undefined,
       }))}
       rail={{
         from: `${to.code ?? to.city} · wedding`,
@@ -389,6 +393,7 @@ export default function WorldJourney({
         ),
       }}
       hint={<ScrollHint variant="column" />}
+      stepper
       trackLength={TRACK_LENGTH}
       railClassName="text-[0.7rem] font-medium tracking-[0.3em] text-(--jm-ink) uppercase sm:text-xs"
       labelSize={15}

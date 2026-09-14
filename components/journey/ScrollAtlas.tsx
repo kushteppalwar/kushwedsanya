@@ -45,6 +45,8 @@ export interface AtlasMilestone {
 export interface AtlasPlace {
   point: Point;
   label: string;
+  /** Camera zoom below which the label fades out, so crowded regions stay legible when zoomed out. */
+  minZoom?: number;
 }
 
 export interface AtlasCameraKeyframe {
@@ -66,7 +68,13 @@ export interface AtlasProgress {
 interface ScrollAtlasProps {
   routes: AtlasRoute[];
   stops: AtlasStop[];
-  pins: { point: Point; stop: JourneyStop; align: "start" | "end" }[];
+  pins: {
+    point: Point;
+    stop: JourneyStop;
+    align: "start" | "end";
+    /** Camera zoom below which the pin fades out. */
+    minZoom?: number;
+  }[];
   places?: AtlasPlace[];
   milestones?: AtlasMilestone[];
   rail: { from: string; to: string };
@@ -90,6 +98,8 @@ interface ScrollAtlasProps {
    * text lifts away first, then the panel dissolves to reveal the map by `until`.
    */
   intro?: { content: ReactNode; until: number };
+  /** Previous / next stop buttons that glide the page to the neighbouring stop. */
+  stepper?: boolean;
   /** Track length in `--atlas-stop` units (default: one per stop, plus one). */
   trackLength?: number;
   railClassName?: string;
@@ -101,8 +111,12 @@ interface ScrollAtlasProps {
   ariaLabel: string;
 }
 
+const stepButton =
+  "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-(--jm-line) bg-(--jm-bg)/90 text-(--jm-ink) shadow-[0_12px_30px_-18px_rgba(0,0,0,0.5)] transition-[opacity,background-color,transform] duration-300 hover:bg-(--jm-bg) active:scale-95 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-30";
+
 const FADE = 0.05;
 const HINT_FADE = 0.03;
+const PLACE_OPACITY = 0.7;
 const DIM_SPAN = 0.05;
 const DIMMED = 0.3;
 
@@ -112,6 +126,16 @@ function clamp01(value: number) {
 
 function smoothstep(t: number) {
   return t * t * (3 - 2 * t);
+}
+
+/** 1 at or above the zoom, fading out to 0 a little below it. */
+function zoomVisibility(scale: number, minZoom?: number) {
+  if (minZoom === undefined) return 1;
+  return smoothstep(clamp01((scale - minZoom * 0.75) / (minZoom * 0.5)));
+}
+
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 function windowOpacity(progress: number, from: number, to: number) {
@@ -137,6 +161,7 @@ export default function ScrollAtlas({
   hud,
   hint,
   intro,
+  stepper = false,
   trackLength = stops.length + 1,
   railClassName = "text-[0.62rem] tracking-[0.3em] text-(--jm-ink) uppercase",
   labelSize = 13,
@@ -159,6 +184,7 @@ export default function ScrollAtlas({
   const hintRefs = useRef<(HTMLDivElement | null)[]>([]);
   const introRef = useRef<HTMLDivElement>(null);
   const introTextRef = useRef<HTMLDivElement>(null);
+  const stepRef = useRef<(direction: 1 | -1) => void>(null);
   const onProgressRef = useRef(onProgress);
   useEffect(() => {
     onProgressRef.current = onProgress;
@@ -291,15 +317,23 @@ export default function ScrollAtlas({
         headEl.style.opacity = headPoint.visible ? "1" : "0";
       });
       pins.forEach((pin, index) => {
-        pinRefs.current[index]?.setAttribute(
+        const el = pinRefs.current[index];
+        if (!el) return;
+        el.setAttribute(
           "transform",
           `translate(${pin.point.x} ${pin.point.y}) scale(${k})`,
         );
+        el.style.opacity = String(zoomVisibility(scale, pin.minZoom));
       });
       places.forEach((place, index) => {
-        placeRefs.current[index]?.setAttribute(
+        const el = placeRefs.current[index];
+        if (!el) return;
+        el.setAttribute(
           "transform",
           `translate(${place.point.x} ${place.point.y}) scale(${k})`,
+        );
+        el.style.opacity = String(
+          PLACE_OPACITY * zoomVisibility(scale, place.minZoom),
         );
       });
       milestones.forEach((milestone, index) => {
@@ -338,6 +372,16 @@ export default function ScrollAtlas({
           introTextRef.current.style.transform = `translateY(${-(1 - text) * 48}px)`;
         }
       }
+
+      // Styled via a data attribute rather than `disabled`: React drops clicks on
+      // a button it rendered as disabled, whatever the DOM says later.
+      stage
+        .querySelectorAll<HTMLButtonElement>("[data-step='-1']")
+        .forEach((button) => {
+          const off = progress <= 0.005;
+          button.dataset.disabled = String(off);
+          button.setAttribute("aria-disabled", String(off));
+        });
 
       // The scroll prompt only needs to be there until the first nudge
       const hintOpacity = 1 - clamp01((progress - 0.005) / HINT_FADE);
@@ -381,13 +425,77 @@ export default function ScrollAtlas({
       if (!frame) frame = requestAnimationFrame(tick);
     };
 
+    // Stepping glides the page itself between stops, so the whole leg plays
+    // out on the way; any touch, wheel or key from the reader takes over.
+    const anchors = Array.from(
+      new Set([
+        ...(intro ? [0] : []),
+        ...stops.map((stop) =>
+          stop.to > 1 ? 1 : Math.max(stop.from + FADE, stop.to - FADE - 0.005),
+        ),
+      ]),
+    ).sort((a, b) => a - b);
+    let glide = 0;
+    const stopGlide = () => {
+      if (glide) cancelAnimationFrame(glide);
+      glide = 0;
+    };
+    const glideTo = (top: number) => {
+      stopGlide();
+      const from = window.scrollY;
+      const distance = top - from;
+      if (Math.abs(distance) < 1) return;
+      if (reduced) {
+        window.scrollTo({ top, behavior: "instant" });
+        return;
+      }
+      const duration = Math.min(
+        2600,
+        700 + (Math.abs(distance) / window.innerHeight) * 550,
+      );
+      const started = performance.now();
+      const step = (now: number) => {
+        const t = clamp01((now - started) / duration);
+        window.scrollTo({
+          top: from + distance * easeInOutCubic(t),
+          behavior: "instant",
+        });
+        glide = t < 1 ? requestAnimationFrame(step) : 0;
+      };
+      glide = requestAnimationFrame(step);
+    };
+    stepRef.current = (direction) => {
+      const rect = track.getBoundingClientRect();
+      const top = rect.top + window.scrollY;
+      const span = rect.height - stage.clientHeight;
+      const at = clamp01((window.scrollY - top) / span);
+      if (direction > 0) {
+        const next = anchors.find((anchor) => anchor > at + 0.01);
+        // Past the last stop, carry on to whatever follows the map
+        glideTo(next === undefined ? top + rect.height : top + next * span);
+      } else {
+        const prev = [...anchors]
+          .reverse()
+          .find((anchor) => anchor < at - 0.01);
+        glideTo(top + (prev ?? 0) * span);
+      }
+    };
+
     render(current);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
+    window.addEventListener("wheel", stopGlide, { passive: true });
+    window.addEventListener("touchstart", stopGlide, { passive: true });
+    window.addEventListener("keydown", stopGlide);
     return () => {
       cancelAnimationFrame(frame);
+      stopGlide();
+      stepRef.current = null;
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
+      window.removeEventListener("wheel", stopGlide);
+      window.removeEventListener("touchstart", stopGlide);
+      window.removeEventListener("keydown", stopGlide);
     };
   }, [
     routes,
@@ -403,6 +511,36 @@ export default function ScrollAtlas({
     smoothing,
     intro,
   ]);
+
+  const stepButtons = ([-1, 1] as const).map((direction) => (
+    <button
+      key={direction}
+      type="button"
+      data-step={direction}
+      aria-label={direction > 0 ? "Next stop" : "Previous stop"}
+      onClick={() => stepRef.current?.(direction)}
+      className={stepButton}
+      data-disabled={direction < 0}
+      aria-disabled={direction < 0}
+    >
+      <svg
+        viewBox="0 0 16 10"
+        className="h-2.5 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        {direction > 0 ? (
+          <path d="M2 2 L8 8 L14 2" />
+        ) : (
+          <path d="M2 8 L8 2 L14 8" />
+        )}
+      </svg>
+    </button>
+  ));
 
   const cardColumn =
     cardsSide === "right"
@@ -649,6 +787,11 @@ export default function ScrollAtlas({
               {hint}
             </div>
           )}
+          {stepper && (
+            <div className="flex w-full justify-end gap-2 lg:hidden">
+              {stepButtons}
+            </div>
+          )}
           {/* Cards stack in one grid cell on phones so the column is as tall as the tallest card */}
           <div className="relative grid w-full items-end lg:block">
             {stops.map((stop, index) => (
@@ -697,6 +840,12 @@ export default function ScrollAtlas({
                 {hint}
               </div>
             )}
+          </div>
+        )}
+
+        {stepper && (
+          <div className="absolute right-6 bottom-8 z-10 hidden flex-col gap-2 lg:flex">
+            {stepButtons}
           </div>
         )}
 

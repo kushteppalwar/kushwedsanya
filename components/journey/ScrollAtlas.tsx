@@ -23,6 +23,8 @@ export interface AtlasRoute {
   ghost?: number;
   /** Scroll progress after which the drawn route dims, so later routes stand out. */
   fadeAfter?: number;
+  /** Opacity the route dims to (default 0.3). */
+  fadeTo?: number;
 }
 
 export interface AtlasStop {
@@ -51,6 +53,8 @@ export interface AtlasCameraKeyframe {
   zoom: number;
   /** Zoom to use instead when the stage is taller than it is wide. */
   portraitZoom?: number;
+  /** Look-at point to use instead when the stage is taller than it is wide. */
+  portraitPoint?: Point;
 }
 
 export interface AtlasProgress {
@@ -184,7 +188,9 @@ export default function ScrollAtlas({
             route.fadeAfter === undefined
               ? 0
               : clamp01((progress - route.fadeAfter) / DIM_SPAN);
-          drawn.style.opacity = String(1 - dim * (1 - DIMMED));
+          drawn.style.opacity = String(
+            1 - dim * (1 - (route.fadeTo ?? DIMMED)),
+          );
         }
 
         if (path && length) {
@@ -215,18 +221,22 @@ export default function ScrollAtlas({
           isPortrait && frame.portraitZoom !== undefined
             ? frame.portraitZoom
             : frame.zoom;
+        const pointOf = (frame: AtlasCameraKeyframe) =>
+          isPortrait && frame.portraitPoint ? frame.portraitPoint : frame.point;
         const next = camera.findIndex((frame) => frame.at >= progress);
         if (next <= 0) {
           const frame = camera[next === 0 ? 0 : camera.length - 1];
-          look = frame.point;
+          look = pointOf(frame);
           scale = zoomOf(frame);
         } else {
           const a = camera[next - 1];
           const b = camera[next];
           const t = smoothstep(clamp01((progress - a.at) / (b.at - a.at || 1)));
+          const pa = pointOf(a);
+          const pb = pointOf(b);
           look = {
-            x: a.point.x + (b.point.x - a.point.x) * t,
-            y: a.point.y + (b.point.y - a.point.y) * t,
+            x: pa.x + (pb.x - pa.x) * t,
+            y: pa.y + (pb.y - pa.y) * t,
           };
           scale = zoomOf(a) + (zoomOf(b) - zoomOf(a)) * t;
         }

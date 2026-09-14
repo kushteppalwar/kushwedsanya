@@ -40,6 +40,11 @@ export const siteVersions = [
     description: "Version 8 tuned for phones — smoothed scrolling, lighter cards — plus a route-style timeline of every event.",
   },
   {
+    href: "/version11",
+    label: "World round trip · calm",
+    description: "Version 10 with one steady world view for the overseas leg and the inbound routes faded right down for the homeward flight.",
+  },
+  {
     href: "/version9",
     label: "Round trip",
     description: "Everyone converges on Delhi for the wedding, then the route turns back to Pune for the reception.",

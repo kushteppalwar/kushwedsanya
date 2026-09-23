@@ -161,7 +161,6 @@ export default function Version15Page() {
           phone: values.get("phone"),
           attending: values.get("attending"),
           partySize: values.get("partySize"),
-          guestNames: values.get("guestNames"),
           wishes: values.get("wishes"),
           publishWish: values.get("publishWish") === "on",
           website: values.get("website"),
@@ -349,7 +348,7 @@ export default function Version15Page() {
         <div className={styles.rsvpInner}>
           <p className={styles.sectionEyebrow}>We would love to celebrate with you</p>
           <h2 id="rsvp-title">Kindly RSVP</h2>
-          <p className={styles.rsvpIntro}>Please let us know if you can join us and who will be travelling with you.</p>
+          <p className={styles.rsvpIntro}>Please let us know if you can join us and how many people will be travelling with you.</p>
 
           <form className={styles.rsvpForm} onSubmit={submitRsvp}>
             <label className={styles.formField}>
@@ -374,11 +373,6 @@ export default function Version15Page() {
             <label className={styles.formField}>
               <span>Total people travelling with you, including yourself</span>
               <input name="partySize" type="number" min="1" max="20" required placeholder="Number of guests" />
-            </label>
-
-            <label className={styles.formField}>
-              <span>Names of accompanying guests <em>(optional)</em></span>
-              <input name="guestNames" maxLength={500} placeholder="Guest names" />
             </label>
 
             <label className={styles.formField}>

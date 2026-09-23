@@ -15,6 +15,6 @@ The RSVP form and server endpoint are connected to the Google Sheets web app dep
 
 6. Restart the Next.js server after changing `.env.local`. New RSVP submissions append to the `RSVPs` tab in that spreadsheet. The script creates the tab and header row if needed, and adds any missing columns while preserving existing responses.
 
-The endpoint keeps the shared secret server-side. RSVPs include the guest's name, phone number, attendance, party size, accompanying guest names, wish for the couple, and a publish preference. A wish appears publicly on the invitation only when the guest checks the sharing box. The public wishes feed returns the wish text only; it never returns phone numbers, names, or RSVP details.
+The endpoint keeps the shared secret server-side. RSVPs include the guest's name, phone number, attendance, party size, wish for the couple, and a publish preference. A wish appears publicly on the invitation only when the guest checks the sharing box. The public wishes feed returns the wish text only; it never returns phone numbers, names, or RSVP details.
 
 The web form is wired to `/api/rsvp`, and that route forwards submissions to the Apps Script deployment. The connection was verified through the site endpoint; no test RSVP was added.

@@ -6,7 +6,6 @@ const RSVP_HEADERS = [
   "Phone number",
   "Attending",
   "Party size",
-  "Accompanying guests",
   "Wishes for couple",
   "Publish wish",
 ];
@@ -32,7 +31,6 @@ function doPost(event) {
       "Phone number": safeCell(payload.phone),
       "Attending": safeCell(payload.attending),
       "Party size": Number(payload.partySize),
-      "Accompanying guests": safeCell(payload.guestNames),
       "Wishes for couple": safeCell(payload.wishes),
       "Publish wish": payload.publishWish === true && String(payload.wishes || "").trim() ? "Yes" : "No",
     };

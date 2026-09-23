@@ -7,7 +7,6 @@ type RsvpPayload = {
   phone?: unknown;
   attending?: unknown;
   partySize?: unknown;
-  guestNames?: unknown;
   wishes?: unknown;
   publishWish?: unknown;
   website?: unknown;
@@ -81,7 +80,6 @@ export async function POST(request: Request) {
   const phone = asText(payload.phone, 32);
   const attending = payload.attending === "yes" ? "Yes" : payload.attending === "no" ? "No" : "";
   const partySize = Number(payload.partySize);
-  const guestNames = asText(payload.guestNames, 500);
   const wishes = asText(payload.wishes, 1200);
   const publishWish = payload.publishWish === true && wishes.length > 0;
   const validPhone = /^[+\d\s().-]+$/.test(phone) && phone.replace(/\D/g, "").length >= 7 && phone.replace(/\D/g, "").length <= 15;
@@ -98,7 +96,6 @@ export async function POST(request: Request) {
     phone,
     attending,
     partySize,
-    guestNames,
     wishes,
     publishWish,
   });

@@ -65,6 +65,9 @@ export interface EventConfig {
     partner2: string;
     partner1City?: string;
     partner2City?: string;
+    /** Full parentage line, pre-worded (e.g. "Daughter of Mrs. X & Mr. Y") since only the family knows the right wording. */
+    partner1Parents?: string;
+    partner2Parents?: string;
   };
   weddingDate: {
     display: string;

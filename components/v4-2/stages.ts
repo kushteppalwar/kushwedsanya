@@ -24,6 +24,13 @@ export interface ExplorerRoute {
   vehicleKind?: VehicleKind;
   /** Seconds one trip along the route takes when the traveller is looping. */
   trip: number;
+  /**
+   * A guest arriving from beyond the frame: no route line is drawn; instead the
+   * traveller glides in from the edge of the map on its true bearing and lands
+   * at the destination, carrying `label` (where it set out from) as a tag.
+   */
+  approach?: boolean;
+  label?: string;
 }
 
 export interface ExplorerCamera {
@@ -52,10 +59,14 @@ export interface ExplorerStage {
   looping?: string[];
   /** Routes whose traveller waits at the end of the route. */
   parked?: string[];
+  /** Seconds the camera takes to fly here (default 1.8); a long pull-back deserves a little more. */
+  flight?: number;
   /** Whether the by air / by rail / by road switch applies here. */
   vehicle?: boolean;
   /** The opening panel rather than a stop card. */
   intro?: boolean;
+  /** Whether the city and place labels show (default true); the intro keeps the map bare behind the names. */
+  labels?: boolean;
 }
 
 /** Does a route id match one of the stage's patterns? */

@@ -82,7 +82,8 @@ export default function StageExplorer({
 
   const next = () => {
     if (!last) {
-      setIndex(index + 1);
+      // Functional updates, so a quick run of clicks steps once per click
+      setIndex((i) => Math.min(i + 1, stages.length - 1));
       return;
     }
     // Past the last stop, carry on to what follows the map
@@ -91,7 +92,7 @@ export default function StageExplorer({
       .getElementById("itinerary")
       ?.scrollIntoView({ behavior: reduced ? "instant" : "smooth", block: "start" });
   };
-  const previous = () => setIndex(Math.max(0, index - 1));
+  const previous = () => setIndex((i) => Math.max(0, i - 1));
 
   // The cards sit on the left, so the map's point of interest sits to the right
   const sceneFocus: AtlasFocus = {
@@ -200,12 +201,14 @@ export default function StageExplorer({
           active={active}
         />
       </div>
+      {/* Old-paper fibre over the whole sheet, then a soft vignette to its edges */}
+      <div className="map-paper pointer-events-none absolute inset-0 mix-blend-multiply" aria-hidden="true" />
       <div
         className="pointer-events-none absolute inset-0"
         aria-hidden="true"
         style={{
           background:
-            "radial-gradient(ellipse at center, transparent 50%, color-mix(in srgb, var(--jm-bg-deep) 85%, transparent) 100%)",
+            "radial-gradient(ellipse at center, transparent 58%, color-mix(in srgb, var(--jm-bg-deep) 65%, transparent) 100%)",
         }}
       />
 
@@ -248,7 +251,9 @@ export default function StageExplorer({
           {vehicleSwitch}
           {stepper}
         </div>
-        <div className="relative grid items-end">
+        {/* The cards stack in one grid cell, so the column is as tall as the tallest of them; on
+            the intro there is no card, so the stack steps aside and the buttons drop to the edge */}
+        <div className={`relative grid items-end ${stage.intro ? "hidden" : ""}`}>
           {stages
             .filter((step) => !step.intro)
             .map((step) => {

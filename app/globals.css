@@ -34,6 +34,11 @@
   --color-cocoa: #3b2a26;
   --color-cocoa-soft: #7c6862;
 
+  /* Garden palette for version 14 — ivory & gold, with a muted garden green
+     the v2 palette doesn't have, for foliage and leaf-work */
+  --color-sage: #7c8f68;
+  --color-sage-deep: #4f5f42;
+
   --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
   --font-sans: "Cormorant Garamond", Garamond, "Times New Roman", serif;
   --font-script: "Great Vibes", "Brush Script MT", cursive;

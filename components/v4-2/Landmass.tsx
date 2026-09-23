@@ -53,11 +53,32 @@ export interface LandmassProps {
   land: string;
   ocean: string;
   coastline: string;
+  /** How strongly the coastline is inked (default 1). */
+  coastlineOpacity?: number;
   /** Fit beyond which India's detailed outline gives way to the whole-world one. */
   crossfadeAt?: number;
 }
 
-export default function Landmass({ view, gridOrigin, land, ocean, coastline, crossfadeAt = 150 }: LandmassProps) {
+/**
+ * The fills are transparent (they crossfade), which puts them in the same
+ * render pass as the route lines — and those don't write depth, so ground
+ * drawn after a line paints straight over it. So the ground is ordered first
+ * and skips the depth buffer altogether: from the pulled-back world view the
+ * buffer can't tell a fill a few hundredths above the sea from the sea itself,
+ * and the two would flicker into each other (and the coastline into its fill).
+ */
+const GROUND_ORDER = -3;
+const COAST_ORDER = -2;
+
+export default function Landmass({
+  view,
+  gridOrigin,
+  land,
+  ocean,
+  coastline,
+  coastlineOpacity = 1,
+  crossfadeAt = 150,
+}: LandmassProps) {
   const originLon = -gridOrigin.x;
   const originLat = gridOrigin.z;
   // Same convention as `at()` elsewhere (x = lon − origin, z = origin − lat), then laid flat:
@@ -72,53 +93,69 @@ export default function Landmass({ view, gridOrigin, land, ocean, coastline, cro
   const india = useMemo(() => buildLand(INDIA_OUTLINE, project), [project]);
   const world = useMemo(() => buildLand(WORLD_LAND, project), [project]);
 
-  const indiaFillRef = useRef<THREE.MeshStandardMaterial>(null);
+  const indiaFillRef = useRef<THREE.MeshBasicMaterial>(null);
   const indiaStrokeRef = useRef<THREE.LineBasicMaterial>(null);
-  const worldFillRef = useRef<THREE.MeshStandardMaterial>(null);
+  const worldFillRef = useRef<THREE.MeshBasicMaterial>(null);
   const worldStrokeRef = useRef<THREE.LineBasicMaterial>(null);
 
   const run = () => {
     const indiaOpacity = fitVisibility(view.current.fit, crossfadeAt);
     const worldOpacity = 1 - indiaOpacity;
     if (indiaFillRef.current) indiaFillRef.current.opacity = indiaOpacity;
-    if (indiaStrokeRef.current) indiaStrokeRef.current.opacity = indiaOpacity;
+    if (indiaStrokeRef.current) indiaStrokeRef.current.opacity = indiaOpacity * coastlineOpacity;
     if (worldFillRef.current) worldFillRef.current.opacity = worldOpacity;
-    if (worldStrokeRef.current) worldStrokeRef.current.opacity = worldOpacity;
+    if (worldStrokeRef.current) worldStrokeRef.current.opacity = worldOpacity * coastlineOpacity;
   };
 
   return (
     <>
       <FrameDriver run={run} />
-      {/* The sea: everywhere that isn't land, so the coastline actually reads as one */}
+      {/* The sea: everywhere that isn't land, so the coastline actually reads as one.
+          Everything on the ground is unlit — printed paper doesn't shade — so the
+          colours below are exactly the colours you see. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
         <planeGeometry args={[6000, 6000]} />
-        <meshStandardMaterial color={ocean} roughness={1} metalness={0} />
+        <meshBasicMaterial color={ocean} />
       </mesh>
 
-      <mesh geometry={india.fill} rotation={[Math.PI / 2, 0, 0]}>
-        <meshStandardMaterial
+      <mesh geometry={india.fill} rotation={[Math.PI / 2, 0, 0]} renderOrder={GROUND_ORDER}>
+        <meshBasicMaterial
           ref={indiaFillRef}
           color={land}
-          roughness={0.95}
           transparent
           side={THREE.DoubleSide}
+          depthTest={false}
+          depthWrite={false}
         />
       </mesh>
-      <lineSegments geometry={india.stroke}>
-        <lineBasicMaterial ref={indiaStrokeRef} color={coastline} transparent />
+      <lineSegments geometry={india.stroke} renderOrder={COAST_ORDER}>
+        <lineBasicMaterial
+          ref={indiaStrokeRef}
+          color={coastline}
+          transparent
+          depthTest={false}
+          depthWrite={false}
+        />
       </lineSegments>
 
-      <mesh geometry={world.fill} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-        <meshStandardMaterial
+      <mesh geometry={world.fill} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} renderOrder={GROUND_ORDER}>
+        <meshBasicMaterial
           ref={worldFillRef}
           color={land}
-          roughness={0.95}
           transparent
           side={THREE.DoubleSide}
+          depthTest={false}
+          depthWrite={false}
         />
       </mesh>
-      <lineSegments geometry={world.stroke} position={[0, -0.02, 0]}>
-        <lineBasicMaterial ref={worldStrokeRef} color={coastline} transparent />
+      <lineSegments geometry={world.stroke} position={[0, -0.02, 0]} renderOrder={COAST_ORDER}>
+        <lineBasicMaterial
+          ref={worldStrokeRef}
+          color={coastline}
+          transparent
+          depthTest={false}
+          depthWrite={false}
+        />
       </lineSegments>
     </>
   );

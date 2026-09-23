@@ -23,18 +23,12 @@ interface WorldJourneyStagesProps {
 
 /** Visible map width (in degrees) when the camera sits over the Pune–Delhi leg. */
 const INDIA_FIT = 28;
-// …and when it pulls back to take in the whole world. Framed to the guests
-// themselves (Canada to Australia is the widest span, ~240°) rather than a
-// round number — wider than that and the real world map (Landmass) reads as
-// a small island in a lot of empty ocean instead of an actual globe view.
-const WORLD_FIT = 300;
-const WORLD_FIT_PORTRAIT = 460;
 /** Past this fit the Indian cities crowd Delhi, so their labels (and Pune's pin) fade out. */
 const LABEL_FIT = 100;
 
-// Pin colours for the day palette: gold for the departure city, terracotta
-// (the same thread the routes and the rest of the day theme use) for the venue.
-const ORIGIN_PIN = "#b8923f";
+// Both pins in the terracotta the routes are drawn in, as on the paper map:
+// gold would sink into the ochre land.
+const ORIGIN_PIN = "#c8553d";
 const VENUE_PIN = "#c8553d";
 
 function centroid(points: MapPoint[]): MapPoint {
@@ -44,6 +38,15 @@ function centroid(points: MapPoint[]): MapPoint {
 
 function km(a: MapPlace, b: MapPlace) {
   return Math.round(distanceKm(a, b) / 10) * 10;
+}
+
+/** "Nagpur, Bengaluru and Hyderabad"; initialisms take an article ("the USA"). */
+function listOf(places: MapPlace[]) {
+  const names = places.map((place) =>
+    /^[A-Z]{2,}$/.test(place.city) ? `the ${place.city}` : place.city,
+  );
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
 /** Venue card used for both the wedding and the reception stops. */
@@ -118,14 +121,7 @@ export default function WorldJourneyStages({
   // instead of one. Guests are pinned to "plane" regardless: the by air/rail/road
   // switch is Kush's own call to make, not something that should turn every guest's
   // arrival into a car or train too.
-  const inbound = (
-    places: MapPlace[],
-    id: string,
-    bow: number,
-    width: number,
-    ghost: number,
-    trip: number,
-  ): ExplorerRoute[] =>
+  const inbound = (places: MapPlace[], id: string, bow: number, width: number, ghost: number, trip: number): ExplorerRoute[] =>
     places.map((place, index) => ({
       id: `${id}-${place.city}`,
       from: at(place),
@@ -141,32 +137,32 @@ export default function WorldJourneyStages({
   const routes: ExplorerRoute[] = [
     { id: "kush", from: origin, to: venue, bow: 0.2, head: "vehicle", trip: 9 },
     ...inbound(indiaGuests, "india", 0.18, 2, 0.08, 5.5),
-    // Long-haul arcs sweep in from high up, so they are drawn a shade lighter
-    ...inbound(worldGuests, "world", 0.12, 1.6, 0.05, 8),
+    // Guests from overseas never get a line on the map — their origins are off any
+    // India framing — so they simply fly in from the edge on their true bearing,
+    // each plane tagged with where it set out from
+    ...inbound(worldGuests, "world", 0.1, 1.6, 0, 7).map((route, index) => ({
+      ...route,
+      approach: true,
+      label: worldGuests[index].city,
+    })),
     { id: "home", from: venue, to: origin, bow: 0.2, ghost: 0, head: "vehicle", trip: 9 },
   ];
 
   const leg = centroid([origin, venue]);
   const indiaCentre = centroid([origin, venue, ...indiaGuests.map(at)]);
-  // Overview framing: the middle of everywhere anyone sets out from, so the
-  // whole world sits beside the card in landscape and above it on phones.
-  const everyone = [origin, venue, ...guestOrigins.map(at)];
-  const overview: MapPoint = {
-    x: (Math.min(...everyone.map((p) => p.x)) + Math.max(...everyone.map((p) => p.x))) / 2,
-    z: (Math.min(...everyone.map((p) => p.z)) + Math.max(...everyone.map((p) => p.z))) / 2,
-  };
-  // Phones are too narrow to centre the world: look just west of the venue so
-  // its label has room on the right and the far-west origins still make the frame.
-  const overviewPortrait: MapPoint = { x: venue.x - 14, z: overview.z };
 
-  const arrivals = ["kush", "india-*", "world-*"];
+  /** Routes with a line on the map; the overseas planes only ever fly in. */
+  const arrivals = ["kush", "india-*"];
   const stages: ExplorerStage[] = [
     {
       key: "intro",
       short: "Begin the journey",
       intro: true,
-      camera: { look: leg, fit: INDIA_FIT * 1.15, pitch: 40 },
+      // A bare, wider India sits behind the names: no labels to tangle with the
+      // type, and the leg nudged east so it lands under the centred text
+      camera: { look: { x: leg.x + 5, z: leg.z }, fit: INDIA_FIT * 1.6, pitch: 54 },
       drawn: [],
+      labels: false,
     },
     {
       key: "kush",
@@ -177,25 +173,14 @@ export default function WorldJourneyStages({
       vehicle: true,
     },
     {
-      key: "india",
-      short: "Across India",
+      key: "everyone",
+      short: "Everyone is coming",
+      // One beat for every guest, and the map stays on India: the Indian legs
+      // draw in and their planes hop to Delhi, while the overseas guests glide in
+      // from beyond the edge of the frame, each plane tagged with its country
       camera: { look: indiaCentre, fit: INDIA_FIT * 1.3, pitch: 50 },
-      drawn: ["kush", "india-*"],
-      // Kush keeps making the Pune–Delhi trip in the background, not just on leg one
-      looping: ["kush", "india-*"],
-    },
-    {
-      key: "world",
-      short: "Around the world",
-      camera: {
-        look: overview,
-        portraitLook: overviewPortrait,
-        fit: WORLD_FIT,
-        portraitFit: WORLD_FIT_PORTRAIT,
-        pitch: 58,
-      },
       drawn: arrivals,
-      looping: ["kush", "world-*"],
+      looping: ["kush", "india-*", "world-*"],
     },
     {
       key: "wedding",
@@ -224,21 +209,15 @@ export default function WorldJourneyStages({
     },
   ];
 
-  const originList = (places: MapPlace[]) => (
-    <ul className="mt-3 space-y-1 sm:mt-4 sm:space-y-1.5">
-      {places.map((place) => (
-        <li
-          key={place.city}
-          className="flex items-baseline justify-between gap-4 font-sans text-lg font-medium sm:text-xl"
-        >
-          <span className="text-(--jm-ink)">{place.city}</span>
-          <span className="text-(--jm-muted) tabular-nums">
-            ≈ {km(place, to).toLocaleString("en-IN")} km
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
+  const distances = guestOrigins.map((place) => km(place, to));
+  const nearest = Math.min(...distances).toLocaleString("en-IN");
+  const farthest = Math.max(...distances).toLocaleString("en-IN");
+  const fromEverywhere = [
+    indiaGuests.length > 0 && `from ${listOf(indiaGuests)}`,
+    worldGuests.length > 0 && `from ${listOf(worldGuests)}`,
+  ]
+    .filter(Boolean)
+    .join("; ");
 
   const cards: Record<string, ReactNode> = {
     kush: (
@@ -253,18 +232,14 @@ export default function WorldJourneyStages({
         </p>
       </>
     ),
-    india: (
+    everyone: (
       <>
-        <p className={eyebrow}>Leg two · across India</p>
+        <p className={eyebrow}>Leg two · everyone is coming</p>
         <h2 className={heading}>All roads lead to {to.city}</h2>
-        {originList(indiaGuests)}
-      </>
-    ),
-    world: (
-      <>
-        <p className={eyebrow}>Leg three · around the world</p>
-        <h2 className={heading}>And from much further</h2>
-        {originList(worldGuests)}
+        <p className={body}>
+          Family and friends {fromEverywhere}. The nearest is {nearest} km away, the farthest{" "}
+          {farthest} — all headed the same way.
+        </p>
       </>
     ),
     wedding: (

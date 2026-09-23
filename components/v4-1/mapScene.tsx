@@ -49,6 +49,17 @@ export interface MapPalette {
   /** The guest-origin travelling dot. Its own colour so it never disappears into a same-hue route. */
   travellerAccent: string;
   cloud: string;
+  /** Fog start and end, as multiples of the camera's distance to its look-at point. */
+  fogNear: number;
+  fogFar: number;
+  /** Glow each city pin throws on the ground; 0 for a flat paper map. */
+  pinLight: number;
+  /** How much the pin head lights itself up; low for a printed mark. */
+  pinEmissive: number;
+  /** The version 4 vehicles' hull, trim and undercarriage. */
+  vehicleBody: string;
+  vehicleAccent: string;
+  vehicleDark: string;
 }
 
 export const NIGHT_PALETTE: MapPalette = {
@@ -64,6 +75,13 @@ export const NIGHT_PALETTE: MapPalette = {
   accent: AMBER,
   travellerAccent: AMBER,
   cloud: "#dfe6f3",
+  fogNear: 1.3,
+  fogFar: 3.4,
+  pinLight: 6,
+  pinEmissive: 1.6,
+  vehicleBody: "#f2e8d5",
+  vehicleAccent: AMBER,
+  vehicleDark: "#1c2436",
 };
 
 export const FOV = 42;
@@ -97,6 +115,8 @@ export interface ViewState {
   pxPerUnitAtLook: number;
   time: number;
   reducedMotion: boolean;
+  /** 0–1 visibility of the city and place labels, for stages that want the map bare. */
+  labels: number;
 }
 
 export type ViewRef = { current: ViewState };
@@ -110,6 +130,7 @@ export function createViewState(): ViewState {
     pxPerUnitAtLook: 1,
     time: 0,
     reducedMotion: false,
+    labels: 1,
   };
 }
 
@@ -331,8 +352,8 @@ export function Atmosphere({ view, palette = NIGHT_PALETTE }: { view: ViewRef; p
   const fogRef = useRef<THREE.Fog>(null);
   const run = () => {
     if (!fogRef.current) return;
-    fogRef.current.near = view.current.distance * 1.3;
-    fogRef.current.far = view.current.distance * 3.4;
+    fogRef.current.near = view.current.distance * palette.fogNear;
+    fogRef.current.far = view.current.distance * palette.fogFar;
   };
   return (
     <>
@@ -357,8 +378,13 @@ export function Graticule({
   const gridRef = useRef<THREE.Mesh>(null);
   const run = () => {
     if (!gridRef.current) return;
-    (gridRef.current.material as THREE.ShaderMaterial & { fadeDistance: number }).fadeDistance =
-      view.current.distance * 3;
+    const material = gridRef.current.material as THREE.ShaderMaterial & {
+      fadeDistance: number;
+      cellThickness: number;
+    };
+    material.fadeDistance = view.current.distance * 3;
+    // From far enough out the 10° cells crowd into a texture, so only the 30° sections stay
+    material.cellThickness = 0.6 * fitVisibility(view.current.fit, 260);
   };
   // The mesh sits on the 10° crossing nearest the venue so its (camera-following)
   // plane is always in reach, and its lines fall on real meridians and parallels.
@@ -567,29 +593,38 @@ export interface TravellerState {
   /** 0–1 position along the route. */
   t: number;
   visible: boolean;
+  /** Size multiplier (default 1): lets a traveller grow in from afar and shrink as it lands. */
+  scale: number;
 }
 
 export function createTravellerState(): TravellerState {
-  return { t: 0, visible: false };
+  return { t: 0, visible: false, scale: 1 };
 }
 
 const vehicles = { plane: Plane, train: Train, car: Car };
 
-/** A version 4 vehicle, or a glowing dot, riding a route at a fixed size on screen. */
+/**
+ * A version 4 vehicle, or a glowing dot, riding a route at a fixed size on
+ * screen — optionally with a small name tag flying alongside.
+ */
 export function Traveller({
   curve,
   kind,
   state,
   view,
   palette = NIGHT_PALETTE,
+  label,
 }: {
   curve: THREE.Curve<THREE.Vector3>;
   kind: VehicleKind | "dot";
   state: TravellerState;
   view: ViewRef;
   palette?: MapPalette;
+  /** Text carried above the traveller, e.g. where it set out from. */
+  label?: string;
 }) {
   const groupRef = useRef<THREE.Group>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
   const scratch = useMemo(() => ({ point: new THREE.Vector3(), ahead: new THREE.Vector3() }), []);
 
   const run = ({ camera }: RootState) => {
@@ -603,7 +638,8 @@ export function Traveller({
     group.position.copy(scratch.point);
     const d = camera.position.distanceTo(group.position);
     if (kind === "dot") {
-      group.scale.setScalar(unitsPerPx * d);
+      group.scale.setScalar(unitsPerPx * d * state.scale);
+      group.updateMatrixWorld();
       return;
     }
     // Every vehicle faces +Z, so looking along the route orients all of them
@@ -611,15 +647,29 @@ export function Traveller({
     scratch.ahead.add(group.position);
     group.lookAt(scratch.ahead);
     if (kind === "plane" && !reducedMotion) group.position.y += Math.sin(time * 2.5) * 0.0035 * d;
-    group.scale.setScalar(VEHICLE_UNIT_PX * unitsPerPx * d);
+    group.scale.setScalar(VEHICLE_UNIT_PX * unitsPerPx * d * state.scale);
+    // The tag projects through this before the renderer would refresh it
+    group.updateMatrixWorld();
+    if (labelRef.current) labelRef.current.style.opacity = String(clamp01(state.scale));
   };
 
   const Vehicle = kind === "dot" ? null : vehicles[kind];
   return (
     <group ref={groupRef} visible={false}>
       <FrameDriver run={run} />
+      {label && (
+        <Html position={[0, 1.1, 0]} style={{ pointerEvents: "none" }} zIndexRange={[10, 0]}>
+          <div
+            ref={labelRef}
+            className="whitespace-nowrap rounded-full border border-(--jm-line) bg-(--jm-bg)/90 px-2.5 py-1 text-[0.6rem] font-semibold tracking-[0.22em] text-(--jm-ink) uppercase shadow-[0_6px_18px_-10px_rgba(0,0,0,0.5)]"
+            style={{ transform: "translate(-50%, -100%)" }}
+          >
+            {label}
+          </div>
+        </Html>
+      )}
       {Vehicle ? (
-        <Vehicle />
+        <Vehicle body={palette.vehicleBody} accent={palette.vehicleAccent} dark={palette.vehicleDark} />
       ) : (
         <>
           <mesh>
@@ -649,6 +699,7 @@ export function PinMarker({
   color = AMBER,
   hideBeyond,
   view,
+  palette = NIGHT_PALETTE,
 }: {
   point: MapPoint;
   stop: JourneyStop;
@@ -657,6 +708,7 @@ export function PinMarker({
   /** Camera fit beyond which the pin fades out. */
   hideBeyond?: number;
   view: ViewRef;
+  palette?: MapPalette;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const ringRef = useRef<THREE.Mesh>(null);
@@ -668,7 +720,7 @@ export function PinMarker({
   const run = ({ camera }: RootState) => {
     const group = groupRef.current;
     if (!group) return;
-    const { fit, unitsPerPx, time, reducedMotion } = view.current;
+    const { fit, unitsPerPx, time, reducedMotion, labels } = view.current;
     const opacity = fitVisibility(fit, hideBeyond);
     group.visible = opacity > 0.01;
     group.scale.setScalar(PIN_UNIT_PX * unitsPerPx * camera.position.distanceTo(group.position));
@@ -676,14 +728,14 @@ export function PinMarker({
     materialRefs.current.forEach((material) => {
       if (material) material.opacity = opacity;
     });
-    if (lightRef.current) lightRef.current.intensity = 6 * opacity;
+    if (lightRef.current) lightRef.current.intensity = palette.pinLight * opacity;
     if (ringRef.current) {
       const phase = reducedMotion ? 0.5 : (time % 2.4) / 2.4;
       const scale = 0.6 + phase * 2.2;
       ringRef.current.scale.set(scale, scale, scale);
       (ringRef.current.material as THREE.MeshBasicMaterial).opacity = (1 - phase) * 0.7 * opacity;
     }
-    if (labelRef.current) labelRef.current.style.opacity = String(opacity);
+    if (labelRef.current) labelRef.current.style.opacity = String(opacity * labels);
   };
 
   return (
@@ -697,7 +749,7 @@ export function PinMarker({
           }}
           color={color}
           emissive={color}
-          emissiveIntensity={1.6}
+          emissiveIntensity={palette.pinEmissive}
           transparent
         />
       </mesh>
@@ -709,7 +761,7 @@ export function PinMarker({
           }}
           color={color}
           emissive={color}
-          emissiveIntensity={0.8}
+          emissiveIntensity={palette.pinEmissive / 2}
           transparent
         />
       </mesh>
@@ -760,12 +812,12 @@ export function PlaceMarker({
   const run = ({ camera }: RootState) => {
     const group = groupRef.current;
     if (!group) return;
-    const { fit, unitsPerPx } = view.current;
+    const { fit, unitsPerPx, labels } = view.current;
     const opacity = PLACE_OPACITY * fitVisibility(fit, hideBeyond);
     group.visible = opacity > 0.01;
     group.scale.setScalar(PLACE_DOT_PX * unitsPerPx * camera.position.distanceTo(group.position));
     group.updateMatrixWorld();
-    if (labelRef.current) labelRef.current.style.opacity = String(opacity);
+    if (labelRef.current) labelRef.current.style.opacity = String(opacity * labels);
   };
 
   return (

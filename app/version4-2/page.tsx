@@ -5,7 +5,7 @@ import { otherVersions } from "@/lib/versions";
 import WorldJourneyStages from "@/components/v4-2/WorldJourneyStages";
 import EventTimeline from "@/components/v13/EventTimeline";
 import { timelineStops } from "@/lib/timeline";
-import Destination from "@/components/v13/Destination";
+import CountdownBand from "@/components/v4-2/CountdownBand";
 import JourneyFooter from "@/components/v13/JourneyFooter";
 import Loader from "@/components/v12/Loader";
 
@@ -29,10 +29,10 @@ export function generateMetadata(): Metadata {
  * Version 4.2: the version 4.1 journey as a run of explorable worlds. Each stop
  * is the version 4 flyover — drag to look around, watch the traveller go round
  * — and a Next button flies the camera to the next one, no scrolling required.
- * The same timeline, destination and countdown follow below.
+ * The timeline and a closing countdown follow below.
  */
 export default function Version42() {
-  const { couple, weddingDate, schedule = [], location, closing } = config;
+  const { couple, schedule = [], location, closing } = config;
   const events = schedule.flatMap((day) => day.events);
   // The countdown runs to the wedding ceremony itself, not the first event of the weekend
   const ceremony =
@@ -70,24 +70,13 @@ export default function Version42() {
             note="Attire notes are only gentle suggestions — wear whatever you'll be happiest in."
           />
         )}
-        <Destination
-          location={location}
-          dateDisplay={weddingDate.display}
-          countdown={
-            ceremony?.start
-              ? {
-                  target: ceremonyInstant(ceremony.start),
-                  until: `the ${ceremony.name.toLowerCase()}`,
-                  when: [ceremonyDay?.date, ceremony.time]
-                    .filter(Boolean)
-                    .join(" · "),
-                }
-              : undefined
-          }
-          directionsUrl={getDirectionsUrl(location)}
-          calendarHref={calendarHref}
-          calendarFileName={calendarFileName}
-        />
+        {ceremony?.start && (
+          <CountdownBand
+            target={ceremonyInstant(ceremony.start)}
+            until={`the ${ceremony.name.toLowerCase()}`}
+            when={[ceremonyDay?.date, ceremony.time].filter(Boolean).join(" · ")}
+          />
+        )}
       </main>
       <JourneyFooter
         partner1={couple.partner1}

@@ -5,12 +5,20 @@ import type { Group } from "three";
 
 export type VehicleKind = "plane" | "train" | "car";
 
-const body = "#f2e8d5";
-const accent = "#f2b544";
-const dark = "#1c2436";
+/** Hull, trim and undercarriage colours; the defaults suit the night flyover. */
+export interface VehicleColors {
+  body?: string;
+  accent?: string;
+  dark?: string;
+}
+
+const NIGHT: Required<VehicleColors> = { body: "#f2e8d5", accent: "#f2b544", dark: "#1c2436" };
 
 /** Every vehicle faces +Z so a single lookAt along the route tangent orients all of them. */
-export const Plane = forwardRef<Group>(function Plane(_, ref) {
+export const Plane = forwardRef<Group, VehicleColors>(function Plane(
+  { body = NIGHT.body, accent = NIGHT.accent },
+  ref,
+) {
   return (
     <group ref={ref}>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -37,7 +45,7 @@ export const Plane = forwardRef<Group>(function Plane(_, ref) {
   );
 });
 
-function Wheel({ position }: { position: [number, number, number] }) {
+function Wheel({ position, dark }: { position: [number, number, number]; dark: string }) {
   return (
     <mesh position={position} rotation={[0, 0, Math.PI / 2]}>
       <cylinderGeometry args={[0.1, 0.1, 0.08, 10]} />
@@ -46,7 +54,10 @@ function Wheel({ position }: { position: [number, number, number] }) {
   );
 }
 
-export const Train = forwardRef<Group>(function Train(_, ref) {
+export const Train = forwardRef<Group, VehicleColors>(function Train(
+  { body = NIGHT.body, accent = NIGHT.accent, dark = NIGHT.dark },
+  ref,
+) {
   const cars: [number, string][] = [
     [0.55, accent],
     [-0.35, body],
@@ -72,17 +83,20 @@ export const Train = forwardRef<Group>(function Train(_, ref) {
               </mesh>
             </>
           )}
-          <Wheel position={[0.2, -0.16, 0.24]} />
-          <Wheel position={[-0.2, -0.16, 0.24]} />
-          <Wheel position={[0.2, -0.16, -0.24]} />
-          <Wheel position={[-0.2, -0.16, -0.24]} />
+          <Wheel position={[0.2, -0.16, 0.24]} dark={dark} />
+          <Wheel position={[-0.2, -0.16, 0.24]} dark={dark} />
+          <Wheel position={[0.2, -0.16, -0.24]} dark={dark} />
+          <Wheel position={[-0.2, -0.16, -0.24]} dark={dark} />
         </group>
       ))}
     </group>
   );
 });
 
-export const Car = forwardRef<Group>(function Car(_, ref) {
+export const Car = forwardRef<Group, VehicleColors>(function Car(
+  { body = NIGHT.body, accent = NIGHT.accent, dark = NIGHT.dark },
+  ref,
+) {
   return (
     <group ref={ref}>
       <mesh position={[0, 0.16, 0]}>
@@ -97,10 +111,10 @@ export const Car = forwardRef<Group>(function Car(_, ref) {
         <boxGeometry args={[0.3, 0.06, 0.02]} />
         <meshStandardMaterial color="#fff3c4" emissive="#fff3c4" emissiveIntensity={1.2} />
       </mesh>
-      <Wheel position={[0.24, 0.08, 0.3]} />
-      <Wheel position={[-0.24, 0.08, 0.3]} />
-      <Wheel position={[0.24, 0.08, -0.3]} />
-      <Wheel position={[-0.24, 0.08, -0.3]} />
+      <Wheel position={[0.24, 0.08, 0.3]} dark={dark} />
+      <Wheel position={[-0.24, 0.08, 0.3]} dark={dark} />
+      <Wheel position={[0.24, 0.08, -0.3]} dark={dark} />
+      <Wheel position={[-0.24, 0.08, -0.3]} dark={dark} />
     </group>
   );
 });

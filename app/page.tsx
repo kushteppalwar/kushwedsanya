@@ -1,1 +1,5 @@
-export { default } from "./version15-1/page";
+import InvalidInvite from "@/components/InvalidInvite";
+
+export default function Home() {
+  return <InvalidInvite />;
+}

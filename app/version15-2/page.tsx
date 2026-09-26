@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import styles from "./version15-1.module.css";
+import styles from "./version15-2.module.css";
 
 const SCRUB_CLIP_SECONDS = 5;
 
@@ -157,7 +157,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     {
       id: "sakharpuda",
       title: "Seemant Poojan & Mehendi",
-      videoSrc: "/v15-1/sakharpuda.mp4",
+      videoSrc: "/v15-2/sakharpuda.mp4",
       date: "Monday, 23 November 2026",
       time: "1:30 pm",
       dressCode: ["Traditional Indian attire"],
@@ -170,7 +170,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     {
       id: "sangeet",
       title: "Sangeet",
-      videoSrc: "/v15-1/sangeet.mp4",
+      videoSrc: "/v15-2/sangeet.mp4",
       date: "Monday, 23 November 2026",
       time: "7:30 pm onwards",
       dressCode: ["Indo-Western"],
@@ -183,7 +183,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     {
       id: "haldi",
       title: "Haldi",
-      videoSrc: "/v15-1/haldi.mp4",
+      videoSrc: "/v15-2/haldi.mp4",
       date: "Tuesday, 24 November 2026",
       time: "11:00 am",
       dressCode: ["Shades of yellow"],
@@ -196,7 +196,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     {
       id: "shadi",
       title: "Shaadi",
-      videoSrc: "/v15-1/shadi.mp4",
+      videoSrc: "/v15-2/shadi.mp4",
       date: "Tuesday, 24 November 2026",
       time: "7:30 pm",
       dressCode: ["Traditional attire"],
@@ -209,7 +209,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     {
       id: "reception",
       title: "Reception",
-      videoSrc: "/v15-1/reception.mp4",
+      videoSrc: "/v15-2/reception.mp4",
       date: "Saturday, 28 November 2026",
       time: "8:00 pm",
       dressCode: ["Western attire"],
@@ -249,7 +249,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
                 setEntryComplete(true);
               }}
             >
-              <source src="/v15-1/entry.mp4" type="video/mp4" />
+              <source src="/v15-2/entry.mp4" type="video/mp4" />
             </video>
           </div>
 
@@ -277,7 +277,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
       <>
       {visibleCelebrations.map((event, index) => (
         <section
-          className={`${styles.eventPage} ${styles.eventSplitPage} ${event.id === "shadi" ? styles.shadiEvent : ""} ${event.id === "sakharpuda" ? styles.sakharpudaEvent : ""}`}
+          className={`${styles.eventPage} ${styles.eventSplitPage} ${event.id === "shadi" ? styles.shadiEvent : ""}`}
           id={index === 0 ? "celebrations" : event.id}
           aria-labelledby={`${event.id}-title`}
           data-event-reveal
@@ -324,7 +324,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
           <p className={styles.storyLine}>Everything we love has brought us to this moment—and to each other.</p>
           <img
             className={styles.storyLogo}
-            src="/v15-1/kush-sanya-wedding-logo.jpeg"
+            src="/v15-2/kush-sanya-wedding-logo.jpeg"
             alt="Kush and Sanya’s wedding logo, illustrated with coding, dancing, travel, food, and places they love"
             loading="lazy"
           />

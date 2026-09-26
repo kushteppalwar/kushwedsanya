@@ -231,6 +231,7 @@
 
 .eventPage {
   --artwork-scale-y: 1;
+  --artwork-zoom: 1.18;
   position: relative;
   isolation: isolate;
   flex: 0 0 auto;
@@ -252,6 +253,7 @@
   height: 100%;
   object-fit: cover;
   object-position: center center;
+  transform: scale(var(--artwork-zoom)) scaleY(var(--artwork-scale-y));
 }
 
 .eventScrubVideo {
@@ -260,7 +262,7 @@
 
 .eventRevealPending .eventArtwork {
   opacity: 0;
-  transform: translate3d(0, 12px, 0) scaleY(var(--artwork-scale-y));
+  transform: translate3d(0, 12px, 0) scale(var(--artwork-zoom)) scaleY(var(--artwork-scale-y));
 }
 
 .eventRevealPending .eventArtwork {
@@ -270,7 +272,7 @@
 
 .eventRevealPending.eventVisible .eventArtwork {
   opacity: 1;
-  transform: translate3d(0, 0, 0) scaleY(var(--artwork-scale-y));
+  transform: translate3d(0, 0, 0) scale(var(--artwork-zoom)) scaleY(var(--artwork-scale-y));
   will-change: auto;
 }
 
@@ -281,10 +283,6 @@
   inset: 0;
   background: linear-gradient(180deg, rgba(248,242,229,.08), transparent 32%, rgba(35,24,16,.025));
   pointer-events: none;
-}
-
-.sakharpudaEvent {
-  --artwork-scale-y: 1.18;
 }
 
 .eventPage::before {
@@ -851,7 +849,7 @@
   .eventRevealPending .eventArtwork,
   .eventRevealPending.shadiEvent::after {
     opacity: 1;
-    transform: none;
+    transform: scale(var(--artwork-zoom)) scaleY(var(--artwork-scale-y));
     transition: none;
     animation: none;
     will-change: auto;

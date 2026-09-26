@@ -1,5 +1,11 @@
 export const siteVersions = [
   {
+    href: "/version15-2",
+    label: "Ivy video invitation · 15.2",
+    description:
+      "A hand-painted invitation with the latest ceremony videos, a gate-opening intro and scroll-controlled scene animations.",
+  },
+  {
     href: "/version14",
     label: "Ivory garden",
     description:

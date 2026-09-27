@@ -7,7 +7,7 @@ const SCRUB_CLIP_SECONDS = 5;
 
 export type InvitationOptions = {
   familyOrder?: "groom" | "bride";
-  eventIds?: Array<"sakharpuda" | "sangeet" | "haldi" | "shadi" | "reception">;
+  eventIds?: Array<"mandap-puja" | "sakharpuda" | "sangeet" | "haldi" | "shadi" | "reception">;
 };
 
 export default function Version15Page({ invitation }: { invitation?: InvitationOptions }) {
@@ -175,6 +175,20 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
 
   const celebrations = [
     {
+      id: "mandap-puja",
+      title: "Mandap Puja",
+      imageSrc: "/v15-2/mandap-puja-poster.jpg",
+      videoSrc: null,
+      date: "Sunday, 22 November 2026",
+      time: "",
+      dressCode: [],
+      hall: null,
+      hallType: null,
+      venue: null,
+      city: null,
+      venueLink: null,
+    },
+    {
       id: "sakharpuda",
       title: "Seemant Poojan & Mehendi",
       imageSrc: "/v15-2/sakharpuda-poster.jpg",
@@ -247,7 +261,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
   ];
   const visibleCelebrations = invitation?.eventIds
     ? celebrations.filter((event) => invitation.eventIds?.includes(event.id as NonNullable<InvitationOptions["eventIds"]>[number]))
-    : celebrations;
+    : celebrations.filter((event) => event.id !== "mandap-puja");
   const familyOrder = invitation?.familyOrder;
 
   return (
@@ -328,7 +342,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
             loading="lazy"
             decoding="async"
           />
-          <video
+          {event.videoSrc && <video
             className={`${styles.eventArtwork} ${styles.eventScrubVideo} ${styles.scrubVideo}`}
             muted
             playsInline
@@ -339,20 +353,20 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
             onError={(event) => event.currentTarget.classList.remove(styles.videoReady)}
           >
             <source src={event.videoSrc} type="video/mp4" />
-          </video>
-          <span className={styles.artworkWatermarkCover} aria-hidden="true">✧</span>
+          </video>}
+          {event.videoSrc && <span className={styles.artworkWatermarkCover} aria-hidden="true">✧</span>}
           <div className={styles.eventFrame}>
             <div className={styles.eventCopyPlate}>
               <span className={styles.eventFlourish} aria-hidden="true">✧</span>
               <h2 id={`${event.id}-title`}>{eventTitle}</h2>
               <div className={styles.eventDivider} aria-hidden="true"><span>✦</span></div>
               <p className={styles.eventDate}>{event.date}</p>
-              <p className={styles.eventTime}>{event.time}</p>
+              {event.time && <p className={styles.eventTime}>{event.time}</p>}
               {event.hall && <p className={styles.eventHall}>{event.hallType} · {event.hall}</p>}
-              <a className={styles.eventVenue} href={event.venueLink} target="_blank" rel="noreferrer">
+              {event.venue && event.venueLink && <a className={styles.eventVenue} href={event.venueLink} target="_blank" rel="noreferrer">
                 {event.venue} ↗
-              </a>
-              <p className={styles.eventCity}>{event.city}</p>
+              </a>}
+              {event.city && <p className={styles.eventCity}>{event.city}</p>}
             </div>
             <div className={styles.eventFooterPlate}>
               {event.dressCode.length > 0 && <div className={styles.eventDressCode}>

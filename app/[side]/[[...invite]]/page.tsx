@@ -18,7 +18,14 @@ export default async function InviteRoute({ params }: RouteProps) {
   const { side, invite } = await params;
   const familyOrder = side === "g" ? "groom" : side === "b" ? "bride" : undefined;
   const code = invite?.join("-") ?? "";
-  const eventIds = eventSets[code];
+  const includesMandapPuja = code === "mp" || code.startsWith("mp-");
+  const baseCode = code === "mp" ? "" : includesMandapPuja ? code.slice(3) : code;
+  const configuredEvents = eventSets[baseCode];
+  const eventIds: NonNullable<InvitationOptions["eventIds"]> | undefined = code === "mp"
+    ? ["mandap-puja"]
+    : configuredEvents && includesMandapPuja
+      ? ["mandap-puja", ...configuredEvents]
+      : configuredEvents;
 
   if (!familyOrder || !eventIds) return <InvalidInvite />;
 

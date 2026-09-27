@@ -180,13 +180,13 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
       imageSrc: "/v15-2/mandap-puja-poster.jpg",
       videoSrc: "/v15-2/mandap.mp4",
       date: "Sunday, 22 November 2026",
-      time: "",
+      time: "10:00 am",
       dressCode: [],
       hall: null,
       hallType: null,
-      venue: null,
-      city: null,
-      venueLink: null,
+      venue: "Pristine Royale",
+      city: "Pune",
+      venueLink: "https://maps.app.goo.gl/dRNXLzzNU8i4fCqg8",
     },
     {
       id: "sakharpuda",
@@ -362,6 +362,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
               <div className={styles.eventDivider} aria-hidden="true"><span>✦</span></div>
               <p className={styles.eventDate}>{event.date}</p>
               {event.time && <p className={styles.eventTime}>{event.time}</p>}
+              {event.id === "mandap-puja" && <p className={styles.eventMeal}>Lunch at 1:00 pm</p>}
               {event.hall && <p className={styles.eventHall}>{event.hallType} · {event.hall}</p>}
               {event.venue && event.venueLink && <a className={styles.eventVenue} href={event.venueLink} target="_blank" rel="noreferrer">
                 {event.venue} ↗

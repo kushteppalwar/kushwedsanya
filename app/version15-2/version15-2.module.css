@@ -476,6 +476,14 @@
   line-height: 1.25;
 }
 
+.eventMeal {
+  margin: 4px 0 0;
+  color: #47372f;
+  font-size: var(--type-body);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
 .eventSplitPage .eventHall {
   margin-top: 8px;
   color: #3e3028;

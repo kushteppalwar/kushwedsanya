@@ -69,19 +69,34 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     const videos = Array.from(document.querySelectorAll<HTMLVideoElement>("[data-scroll-video]"));
     if (!videos.length) return;
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const showStillArtwork = (video: HTMLVideoElement) => {
-        if (video.readyState < HTMLMediaElement.HAVE_METADATA) return;
-        video.currentTime = Math.min(2.5, Math.max(0, video.duration - 0.04));
-        video.pause();
-      };
-      const onLoaded = (event: Event) => showStillArtwork(event.currentTarget as HTMLVideoElement);
-      videos.forEach((video) => {
-        showStillArtwork(video);
-        video.addEventListener("loadedmetadata", onLoaded, { once: true });
-      });
-      return () => videos.forEach((video) => video.removeEventListener("loadedmetadata", onLoaded));
-    }
+    // Keep the still artwork for guests who prefer reduced motion; don't fetch
+    // multi-megabyte event clips they won't see animate.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const loadVideo = (video: HTMLVideoElement) => {
+      if (video.dataset.loadRequested === "true") return;
+      video.dataset.loadRequested = "true";
+      video.preload = "auto";
+      video.load();
+    };
+
+    const preloadObserver = "IntersectionObserver" in window
+      ? new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const scene = entry.target as HTMLElement;
+            const video = scene.querySelector<HTMLVideoElement>("[data-scroll-video]");
+            if (video) loadVideo(video);
+            preloadObserver?.unobserve(scene);
+          });
+        }, { rootMargin: `${Math.max(window.innerHeight * 1.5, 900)}px 0px` })
+      : null;
+
+    videos.forEach((video) => {
+      const scene = video.closest<HTMLElement>("[data-scroll-scene]");
+      if (scene && preloadObserver) preloadObserver.observe(scene);
+      else loadVideo(video);
+    });
 
     let frame = 0;
     const clamp = (value: number) => Math.min(1, Math.max(0, value));
@@ -111,6 +126,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     videos.forEach((video) => {
       video.pause();
       video.addEventListener("loadedmetadata", requestSync);
+      video.addEventListener("loadeddata", requestSync);
     });
     requestSync();
     window.addEventListener("scroll", requestSync, { passive: true });
@@ -118,7 +134,11 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     document.addEventListener("visibilitychange", requestSync);
 
     return () => {
-      videos.forEach((video) => video.removeEventListener("loadedmetadata", requestSync));
+      videos.forEach((video) => {
+        video.removeEventListener("loadedmetadata", requestSync);
+        video.removeEventListener("loadeddata", requestSync);
+      });
+      preloadObserver?.disconnect();
       window.removeEventListener("scroll", requestSync);
       window.removeEventListener("resize", requestSync);
       document.removeEventListener("visibilitychange", requestSync);
@@ -157,6 +177,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     {
       id: "sakharpuda",
       title: "Seemant Poojan & Mehendi",
+      imageSrc: "/v15-2/sakharpuda-poster.jpg",
       videoSrc: "/v15-2/sakharpuda.mp4",
       date: "Monday, 23 November 2026",
       time: "1:30 pm",
@@ -170,6 +191,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     {
       id: "sangeet",
       title: "Sangeet",
+      imageSrc: "/v15-2/sangeet-poster.jpg",
       videoSrc: "/v15-2/sangeet.mp4",
       date: "Monday, 23 November 2026",
       time: "7:30 pm onwards",
@@ -183,6 +205,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     {
       id: "haldi",
       title: "Haldi",
+      imageSrc: "/v15-2/haldi-poster.jpg",
       videoSrc: "/v15-2/haldi.mp4",
       date: "Tuesday, 24 November 2026",
       time: "11:00 am",
@@ -196,6 +219,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     {
       id: "shadi",
       title: "Shaadi",
+      imageSrc: "/v15-2/shadi-poster.jpg",
       videoSrc: "/v15-2/shadi.mp4",
       date: "Tuesday, 24 November 2026",
       time: "7:30 pm",
@@ -209,6 +233,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     {
       id: "reception",
       title: "Reception",
+      imageSrc: "/v15-2/reception-poster.jpg",
       videoSrc: "/v15-2/reception.mp4",
       date: "Saturday, 28 November 2026",
       time: "8:00 pm",
@@ -237,13 +262,21 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
       >
         <div className={styles.scene}>
           <div className={styles.painting}>
+            <img
+              className={`${styles.paintingImage} ${styles.entryPoster}`}
+              src="/v15-2/entry-poster.jpg"
+              alt="A hand-painted ivory palace with Ganpati beneath a flowered arch"
+              fetchPriority="high"
+            />
             <video
               className={`${styles.paintingImage} ${styles.entryVideo}`}
               muted
               playsInline
-              preload="auto"
+              preload="metadata"
               data-entry-video
               aria-hidden="true"
+              onLoadedData={(event) => event.currentTarget.classList.add(styles.videoReady)}
+              onError={(event) => event.currentTarget.classList.remove(styles.videoReady)}
               onEnded={() => {
                 setEntryPlaying(false);
                 setEntryComplete(true);
@@ -284,13 +317,22 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
           data-scroll-scene
           key={event.id}
         >
+          <img
+            className={styles.eventPoster}
+            src={event.imageSrc}
+            alt={`A hand-painted still illustration for ${event.title}`}
+            loading="lazy"
+            decoding="async"
+          />
           <video
             className={`${styles.eventArtwork} ${styles.eventScrubVideo} ${styles.scrubVideo}`}
             muted
             playsInline
-            preload="auto"
+            preload="none"
             data-scroll-video
             aria-hidden="true"
+            onLoadedData={(event) => event.currentTarget.classList.add(styles.videoReady)}
+            onError={(event) => event.currentTarget.classList.remove(styles.videoReady)}
           >
             <source src={event.videoSrc} type="video/mp4" />
           </video>

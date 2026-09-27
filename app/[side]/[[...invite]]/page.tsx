@@ -10,6 +10,8 @@ const eventSets: Record<string, NonNullable<InvitationOptions["eventIds"]>> = {
   "sk-sg-hw-we": ["sakharpuda", "sangeet", "haldi", "shadi"],
   "sg-we": ["sangeet", "shadi"],
   "sk-sg-hw-re": ["sakharpuda", "sangeet", "haldi", "reception"],
+  "re": ["reception"],
+  "we": ["shadi"],
 };
 
 export default async function InviteRoute({ params }: RouteProps) {

@@ -23,8 +23,26 @@ const greatVibes = Great_Vibes({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://kushwedsanya.vercel.app"),
   title: "Sanya & Kush — Wedding Invitation",
   description: "You are invited to celebrate the wedding of Sanya & Kush.",
+  openGraph: {
+    type: "website",
+    title: "Sanya & Kush — Wedding Invitation",
+    description: "You are invited to celebrate the wedding of Sanya & Kush.",
+    images: [
+      {
+        url: "/v15-2/kush-sanya-wedding-logo.jpeg",
+        width: 1254,
+        height: 1254,
+        alt: "Kush and Sanya’s wedding logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/v15-2/kush-sanya-wedding-logo.jpeg"],
+  },
 };
 
 export default function RootLayout({

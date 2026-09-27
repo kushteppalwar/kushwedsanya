@@ -308,8 +308,12 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
       </div>
 
       <>
-      {visibleCelebrations.map((event, index) => (
-        <section
+      {visibleCelebrations.map((event, index) => {
+        const eventTitle = event.id === "sakharpuda" && familyOrder === "bride"
+          ? "Seemant Poojan"
+          : event.title;
+
+        return <section
           className={`${styles.eventPage} ${styles.eventSplitPage} ${event.id === "shadi" ? styles.shadiEvent : ""}`}
           id={index === 0 ? "celebrations" : event.id}
           aria-labelledby={`${event.id}-title`}
@@ -320,7 +324,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
           <img
             className={styles.eventPoster}
             src={event.imageSrc}
-            alt={`A hand-painted still illustration for ${event.title}`}
+            alt={`A hand-painted still illustration for ${eventTitle}`}
             loading="lazy"
             decoding="async"
           />
@@ -340,7 +344,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
           <div className={styles.eventFrame}>
             <div className={styles.eventCopyPlate}>
               <span className={styles.eventFlourish} aria-hidden="true">✧</span>
-              <h2 id={`${event.id}-title`}>{event.title}</h2>
+              <h2 id={`${event.id}-title`}>{eventTitle}</h2>
               <div className={styles.eventDivider} aria-hidden="true"><span>✦</span></div>
               <p className={styles.eventDate}>{event.date}</p>
               <p className={styles.eventTime}>{event.time}</p>
@@ -358,8 +362,8 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
             </div>
           </div>
           <span className={styles.eventHandoff} aria-hidden="true">✥</span>
-        </section>
-      ))}
+        </section>;
+      })}
 
       <section className={styles.storySection} aria-labelledby="story-title">
         <div className={styles.storyPanel}>

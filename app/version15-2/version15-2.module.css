@@ -230,8 +230,6 @@
 }
 
 .eventPage {
-  --artwork-scale-y: 1;
-  --artwork-zoom: 1.18;
   position: relative;
   isolation: isolate;
   flex: 0 0 auto;
@@ -253,7 +251,24 @@
   height: 100%;
   object-fit: cover;
   object-position: center center;
-  transform: scale(var(--artwork-zoom)) scaleY(var(--artwork-scale-y));
+}
+
+.artworkWatermarkCover {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 0;
+  display: grid;
+  width: min(160px, 42%);
+  height: 52px;
+  place-items: center;
+  border: 1px solid rgba(171, 129, 68, .5);
+  border-radius: 0 0 0 24px;
+  background: linear-gradient(135deg, rgba(255, 251, 245, .99), rgba(250, 239, 229, .97));
+  box-shadow: 0 2px 7px rgba(48, 29, 24, .12), inset 0 0 0 3px rgba(255, 255, 255, .58);
+  color: #a77b42;
+  font-size: 1rem;
+  pointer-events: none;
 }
 
 .eventScrubVideo {
@@ -262,7 +277,7 @@
 
 .eventRevealPending .eventArtwork {
   opacity: 0;
-  transform: translate3d(0, 12px, 0) scale(var(--artwork-zoom)) scaleY(var(--artwork-scale-y));
+  transform: translate3d(0, 12px, 0);
 }
 
 .eventRevealPending .eventArtwork {
@@ -272,7 +287,7 @@
 
 .eventRevealPending.eventVisible .eventArtwork {
   opacity: 1;
-  transform: translate3d(0, 0, 0) scale(var(--artwork-zoom)) scaleY(var(--artwork-scale-y));
+  transform: translate3d(0, 0, 0);
   will-change: auto;
 }
 
@@ -849,7 +864,7 @@
   .eventRevealPending .eventArtwork,
   .eventRevealPending.shadiEvent::after {
     opacity: 1;
-    transform: scale(var(--artwork-zoom)) scaleY(var(--artwork-scale-y));
+    transform: none;
     transition: none;
     animation: none;
     will-change: auto;

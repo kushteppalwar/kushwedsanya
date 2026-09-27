@@ -1,4 +1,4 @@
-import Version15Page, { type InvitationOptions } from "../../version15-1/page";
+import Version15Page, { type InvitationOptions } from "../../version15-2/page";
 import InvalidInvite from "@/components/InvalidInvite";
 
 type RouteProps = {

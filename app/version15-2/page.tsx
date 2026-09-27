@@ -294,6 +294,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
           >
             <source src={event.videoSrc} type="video/mp4" />
           </video>
+          <span className={styles.artworkWatermarkCover} aria-hidden="true">✧</span>
           <div className={styles.eventFrame}>
             <div className={styles.eventCopyPlate}>
               <span className={styles.eventFlourish} aria-hidden="true">✧</span>

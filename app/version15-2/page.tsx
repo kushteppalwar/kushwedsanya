@@ -359,8 +359,21 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
               <span className={styles.eventFlourish} aria-hidden="true">✧</span>
               <h2 id={`${event.id}-title`}>{eventTitle}</h2>
               <div className={styles.eventDivider} aria-hidden="true"><span>✦</span></div>
-              <p className={styles.eventDate}>{event.date}</p>
-              {event.time && <p className={styles.eventTime}>{event.time}</p>}
+              <a
+                className={styles.eventCalendarLink}
+                href={`/api/calendar/${event.id}?side=${familyOrder ?? "groom"}`}
+                aria-label={`Add ${eventTitle} to your calendar`}
+              >
+                <p className={styles.eventDate}>{event.date}</p>
+                {event.time && <p className={styles.eventTime}>{event.time}</p>}
+                <span className={styles.eventCalendarHint}>
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <rect x="2" y="3.5" width="12" height="10.5" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+                    <path d="M5 2v3M11 2v3M2.5 6.5h11" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                  </svg>
+                  Add to calendar
+                </span>
+              </a>
               {event.id === "mandap-puja" && <p className={styles.eventMeal}>Lunch at 1:00 pm</p>}
               {event.hall && <p className={styles.eventHall}>{event.hallType} · {event.hall}</p>}
               {event.venue && event.venueLink && <a className={styles.eventVenue} href={event.venueLink} target="_blank" rel="noreferrer">

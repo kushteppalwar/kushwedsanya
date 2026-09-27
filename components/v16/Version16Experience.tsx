@@ -356,11 +356,6 @@ function MapJourney({ direction }: { direction: "north" | "home" }) {
         <div className={styles.journeyCaption}>
           <span className={styles.chapterKicker}>{chapterLabel}</span>
           <p>{chapterText}</p>
-          {northbound && (
-            <span className={styles.guestOrigins}>
-              Family and friends join us from {guestOrigins.map((place) => place.city).join(" · ")}
-            </span>
-          )}
           <span className={styles.cityRoute}>{from.city}<span aria-hidden="true"> → </span>{to.city}</span>
         </div>
       </div>
@@ -441,17 +436,17 @@ function EventScene({ event, familyOrder, progress }: { event: Celebration; fami
       <div className={styles.eventFrame}>
         <article className={styles.eventCard}>
           <span className={styles.cardFlourish} aria-hidden="true">✦</span>
-          <p className={styles.chapterKicker}>{event.city === "New Delhi" ? "The celebrations" : "A celebration in Pune"}</p>
           <h2 id={`${event.id}-title`}>{eventTitle}</h2>
           <div className={styles.cardDivider} aria-hidden="true" />
           <a className={styles.calendarLink} href={`/api/calendar/${event.id}?side=${familyOrder}`} aria-label={`Add ${eventTitle} to your calendar`}>
             <span>{event.date}</span>
             <strong>{event.time}</strong>
-            <span className={styles.calendarHint}><CalendarIcon /> Add to calendar</span>
           </a>
           {event.lunch && <p className={styles.mealLine}>{event.lunch}</p>}
-          <p className={styles.eventRoom}>{event.hall && <span>{event.hallType} · {event.hall}<br /></span>}{event.venue}</p>
-          <a className={styles.mapLink} href={event.mapUrl} target="_blank" rel="noreferrer">View map <span aria-hidden="true">↗</span></a>
+          <p className={styles.eventRoom}>
+            {event.hall && <span>{event.hallType} · {event.hall}<br /></span>}
+            <a className={styles.mapLink} href={event.mapUrl} target="_blank" rel="noreferrer">{event.venue}</a>
+          </p>
         </article>
         {event.dressCode.length > 0 && (
           <div className={styles.dressPlate}>
@@ -463,10 +458,6 @@ function EventScene({ event, familyOrder, progress }: { event: Celebration; fami
       <div className={styles.handoff} aria-hidden="true"><span>✥</span></div>
     </section>
   );
-}
-
-function CalendarIcon() {
-  return <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3.5" width="12" height="10.5" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" /><path d="M5 2v3M11 2v3M2.5 6.5h11" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>;
 }
 
 function RSVP({ familyOrder }: { familyOrder: "groom" | "bride" }) {

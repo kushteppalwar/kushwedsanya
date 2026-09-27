@@ -48,7 +48,10 @@
 
 .coverWash {
   z-index: -1;
-  background: linear-gradient(180deg, rgba(36, 22, 20, .03) 12%, rgba(45, 27, 25, .1) 40%, rgba(35, 20, 23, .54) 100%);
+  /* Left nearly clear over the top (so the artwork's own subject stays the
+     focus), deepening only where the text sits — legible on the photo
+     itself, without a card blocking it. */
+  background: linear-gradient(180deg, rgba(28, 16, 15, .02) 0%, rgba(28, 16, 15, .05) 32%, rgba(26, 14, 13, .3) 56%, rgba(18, 9, 9, .76) 100%);
 }
 
 .cover::before,
@@ -64,14 +67,12 @@
 .cover::after { inset: 16px; border-color: rgba(230, 201, 137, .52); }
 
 .coverFrame {
-  width: min(100%, 410px);
+  /* No card — the text sits straight on the photo, kept legible by
+     .coverWash and its own drop-shadow, so the artwork stays visible
+     around and through it instead of being covered by a panel. */
+  width: min(100%, 380px);
   margin-top: auto;
-  padding: clamp(22px, 6vw, 32px) 18px 24px;
-  border: 1px solid var(--gold);
-  outline: 1px solid rgba(255, 247, 225, .7);
-  outline-offset: -7px;
-  background: rgba(248, 241, 228, .96);
-  box-shadow: 0 18px 45px rgba(31, 20, 18, .22);
+  padding: 0 10px 2px;
 }
 
 .coverKicker,
@@ -86,30 +87,41 @@
   text-transform: uppercase;
 }
 
+/* On the cover the eyebrow sits on the photo, not a paper card, so it needs
+   the light/dark treatment flipped from the shared base above. */
+.coverKicker {
+  color: #f6e6be;
+  text-shadow: 0 1px 3px rgba(12, 6, 5, .9), 0 3px 12px rgba(12, 6, 5, .75);
+}
+
 .coverFamilies {
-  max-width: 340px;
-  margin: 15px auto 7px;
-  color: var(--ink);
-  font-size: clamp(1.15rem, 5vw, 1.38rem);
-  line-height: 1.35;
+  max-width: 300px;
+  margin: 10px auto 5px;
+  color: #fbf3e1;
+  font-size: clamp(1.02rem, 4.4vw, 1.24rem);
+  font-weight: 700;
+  line-height: 1.32;
+  text-shadow: 0 1px 3px rgba(12, 6, 5, .9), 0 3px 14px rgba(12, 6, 5, .8);
 }
 
 .cover h1 {
-  margin: 4px 0 9px;
-  color: var(--wine);
-  font-size: clamp(2.65rem, 11vw, 4.1rem);
-  font-weight: 600;
-  line-height: 1.02;
+  margin: 2px 0 7px;
+  color: #fffaef;
+  font-size: clamp(2.5rem, 10.5vw, 3.9rem);
+  font-weight: 700;
+  line-height: 1;
   text-wrap: balance;
+  text-shadow: 0 2px 4px rgba(12, 6, 5, .9), 0 6px 24px rgba(12, 6, 5, .85);
 }
 
 .coverDates {
   display: block;
-  color: #4d3530;
+  color: #f6e6be;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: .09em;
+  text-shadow: 0 1px 3px rgba(12, 6, 5, .9), 0 3px 12px rgba(12, 6, 5, .8);
 }
 
 .beginButton {
@@ -118,7 +130,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-top: 19px;
+  margin-top: 14px;
   padding: 10px 21px;
   border: 1px solid #8e5c45;
   border-radius: 999px;
@@ -217,18 +229,6 @@
   text-wrap: balance;
 }
 
-.guestOrigins {
-  display: block;
-  max-width: 330px;
-  margin: 10px auto 0;
-  color: #4d3933;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: .98rem;
-  font-weight: 600;
-  line-height: 1.45;
-  text-wrap: pretty;
-}
-
 .cityRoute {
   color: #6b4e42;
   font-family: Georgia, "Times New Roman", serif;
@@ -279,7 +279,9 @@
 .eventPoster { object-fit: cover; object-position: center 40%; }
 .eventVideo { z-index: 1; object-fit: cover; object-position: center 40%; opacity: 0; transition: opacity .45s ease; }
 .videoReady { opacity: 1; }
-.artworkShade { z-index: 2; background: linear-gradient(180deg, rgba(40, 23, 24, .34), transparent 28%, transparent 66%, rgba(42, 24, 25, .42)); pointer-events: none; }
+/* Darkest at the top where the caption text now sits, clearing lower down
+   where the video/photo's figures actually stand. */
+.artworkShade { z-index: 2; background: linear-gradient(180deg, rgba(18, 9, 9, .82) 0%, rgba(24, 13, 13, .44) 26%, transparent 46%, transparent 100%); pointer-events: none; }
 
 .delhiProgress,
 .artworkLocation {
@@ -301,7 +303,10 @@
 .delhiProgress { left: 17px; }
 .artworkLocation { right: 17px; }
 
-/* Everything below floats inside the photo's own frame, not underneath it. */
+/* Everything below floats directly on the photo, gathered toward the top —
+   every animation here has its figures lower in frame, so the text sits
+   above them instead of covering the action, the way the cover holds its
+   text over the photo's least busy area. */
 .eventFrame {
   position: absolute;
   z-index: 5;
@@ -309,19 +314,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: clamp(34px, 4.5svh, 44px) 0 30px;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: clamp(40px, 6svh, 54px) 0 30px;
 }
 
 .eventCard {
   width: min(100%, 340px);
-  padding: 19px 20px 17px;
-  border: 1px solid rgba(171, 129, 68, .5);
-  border-radius: 18px;
-  background: rgba(250, 245, 235, .94);
-  box-shadow: 0 10px 28px rgba(51, 30, 26, .22), inset 0 1px 0 rgba(255, 255, 255, .9);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+  padding: 0 14px;
   text-align: center;
   opacity: 0;
   transform: translate3d(0, 14px, 0);
@@ -330,47 +330,49 @@
 
 .eventVisible .eventCard { opacity: 1; transform: translate3d(0, 0, 0); }
 
-.cardFlourish { display: block; margin-bottom: 2px; color: var(--gold); font-size: 1.1rem; }
-.eventCard h2 { margin: 3px 0 8px; color: var(--wine); font-size: clamp(1.85rem, 8vw, 2.5rem); font-weight: 600; line-height: 1.03; text-wrap: balance; }
+/* Warm gold-cream reads better than plain white against these photos, and a
+   tight, dark, high-contrast shadow (not a soft glow) keeps every line
+   legible over both bright sky and dark fabric alike. */
+.cardFlourish { display: block; margin-bottom: 3px; color: var(--gold-pale); font-size: 1.1rem; text-shadow: 0 1px 2px rgba(6, 3, 2, 1); }
+.eventCard h2 {
+  margin: 0 0 6px;
+  color: #ffedc2;
+  font-size: clamp(2.05rem, 8.8vw, 2.7rem);
+  font-weight: 700;
+  line-height: 1.02;
+  text-wrap: balance;
+  text-shadow: 0 1px 2px rgba(6, 3, 2, 1), 0 3px 14px rgba(6, 3, 2, .9);
+}
 
-.cardDivider { display: flex; align-items: center; gap: 10px; width: min(200px, 80%); margin: 0 auto 10px; color: var(--gold); }
+.cardDivider { display: flex; align-items: center; gap: 10px; width: min(200px, 80%); margin: 0 auto 8px; color: var(--gold-pale); }
 .cardDivider::before,
 .cardDivider::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, currentColor); }
 .cardDivider::after { transform: rotate(180deg); }
 
 .calendarLink {
   display: flex;
-  min-height: 44px;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: center;
   column-gap: 8px;
-  color: #3f302d;
-  font-size: clamp(1rem, 4.6vw, 1.15rem);
-  font-weight: 600;
-  line-height: 1.4;
+  color: #ffedc2;
+  font-size: clamp(1.05rem, 4.8vw, 1.2rem);
+  font-weight: 700;
+  line-height: 1.25;
   text-decoration: none;
+  text-shadow: 0 1px 2px rgba(6, 3, 2, 1), 0 2px 8px rgba(6, 3, 2, .9);
 }
 
-.calendarLink strong { color: var(--wine); font-size: 1.15em; font-weight: 700; white-space: nowrap; }
-.calendarHint { display: inline-flex; align-items: center; gap: 5px; margin-left: 2px; color: #755648; font-family: Georgia, "Times New Roman", serif; font-size: .8rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
-.calendarHint svg { width: 14px; height: 14px; }
-.mealLine { margin: 6px 0 0; color: #553930; font-size: 1.02rem; font-weight: 700; }
-.eventRoom { margin: 10px auto 0; color: #302826; font-size: 1.05rem; font-weight: 600; line-height: 1.32; }
-.eventRoom span { color: #65494a; }
-.mapLink { display: inline-flex; min-height: 40px; align-items: center; gap: 7px; margin-top: 4px; color: #713c40; font-family: Georgia, "Times New Roman", serif; font-size: .98rem; font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.calendarLink strong { color: #fff6e0; font-size: 1.15em; font-weight: 700; white-space: nowrap; }
+.mealLine { margin: 4px 0 0; color: #ffedc2; font-size: 1.05rem; font-weight: 700; text-shadow: 0 1px 2px rgba(6, 3, 2, 1), 0 2px 8px rgba(6, 3, 2, .9); }
+.eventRoom { margin: 4px auto 0; color: #ffedc2; font-size: 1.08rem; font-weight: 700; line-height: 1.24; text-shadow: 0 1px 2px rgba(6, 3, 2, 1), 0 2px 8px rgba(6, 3, 2, .9); }
+.eventRoom span { color: #f4dfab; }
+.mapLink { color: #f9e6b4; font-weight: 700; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
-/* Dress code gets its own small plate near the bottom of the photo, the way
-   15.2 separated it from the main card instead of trailing inside it. */
+/* Dress code sits under the main text, on the photo too — no plate anymore. */
 .dressPlate {
   width: min(100%, 290px);
-  padding: 8px 16px 9px;
-  border: 1px solid rgba(171, 129, 68, .4);
-  border-radius: 14px;
-  background: rgba(255, 253, 249, .88);
-  box-shadow: 0 4px 14px rgba(48, 29, 24, .14);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
+  padding: 0 12px;
   text-align: center;
   opacity: 0;
   transform: translate3d(0, 10px, 0);
@@ -379,8 +381,8 @@
 
 .eventVisible .dressPlate { opacity: 1; transform: translate3d(0, 0, 0); }
 
-.dressCode { margin: 0; color: #3e302c; font-size: .96rem; font-weight: 600; line-height: 1.3; }
-.dressLabel { display: block; margin-bottom: 2px; color: #765647; font-family: Georgia, "Times New Roman", serif; font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.dressCode { margin: 0; color: #ffedc2; font-size: 1rem; font-weight: 700; line-height: 1.22; text-shadow: 0 1px 2px rgba(6, 3, 2, 1), 0 2px 8px rgba(6, 3, 2, .9); }
+.dressLabel { display: block; margin-bottom: 2px; color: #f4dfab; font-family: Georgia, "Times New Roman", serif; font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; text-shadow: 0 1px 2px rgba(6, 3, 2, 1), 0 2px 8px rgba(6, 3, 2, .9); }
 
 .handoff {
   position: absolute;

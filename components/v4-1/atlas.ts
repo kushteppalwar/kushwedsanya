@@ -44,6 +44,8 @@ export interface Atlas3DPin {
   stop: JourneyStop;
   align: "start" | "end";
   color?: string;
+  /** Compact place label for map panels smaller than a full-screen stage. */
+  compactLabel?: boolean;
   /** Camera fit (visible map width, in degrees) beyond which the pin fades out. */
   hideBeyond?: number;
 }
@@ -51,6 +53,12 @@ export interface Atlas3DPin {
 export interface Atlas3DPlace {
   point: MapPoint;
   label: string;
+  /** Show the text label beside the dot (dots may stay unlabeled on narrow maps). */
+  showLabel?: boolean;
+  /** Shorter label treatment for a compact portrait globe. */
+  compactLabel?: boolean;
+  /** Which side of the dot should hold the label. */
+  labelAlign?: "start" | "end";
   /** Camera fit beyond which the label fades out, so crowded regions stay legible when zoomed out. */
   hideBeyond?: number;
 }

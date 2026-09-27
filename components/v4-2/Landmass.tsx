@@ -61,11 +61,19 @@ export interface LandmassProps {
 
 /**
  * The fills are transparent (they crossfade), which puts them in the same
- * render pass as the route lines — and those don't write depth, so ground
- * drawn after a line paints straight over it. So the ground is ordered first
- * and skips the depth buffer altogether: from the pulled-back world view the
- * buffer can't tell a fill a few hundredths above the sea from the sea itself,
- * and the two would flicker into each other (and the coastline into its fill).
+ * render pass as the route lines, pins and travellers. Route lines and pins
+ * are transparent too and drawn after the ground (by `renderOrder`), so they
+ * simply paint over it. Anything *opaque* — the version 4 vehicles — draws in
+ * an earlier pass entirely, before the ground's transparent pass runs; if the
+ * ground ignored the depth buffer (as it used to, to dodge land-vs-sea
+ * z-fighting at the pulled-back world view) it would blindly paint over those
+ * already-drawn opaque pixels, hiding a plane wherever the ground's polygon
+ * covers it on screen — regardless of the plane's actual height. `polygonOffset`
+ * fixes the original z-fighting instead, without needing to skip the depth
+ * test: it nudges the ground's *depth value* toward the camera by a fixed
+ * amount, reliably ahead of the sea (and of the other fill, during the
+ * crossfade) at any zoom, while leaving real depth testing — and therefore
+ * anything actually in front of the ground — intact.
  */
 const GROUND_ORDER = -3;
 const COAST_ORDER = -2;
@@ -124,8 +132,10 @@ export default function Landmass({
           color={land}
           transparent
           side={THREE.DoubleSide}
-          depthTest={false}
           depthWrite={false}
+          polygonOffset
+          polygonOffsetFactor={-4}
+          polygonOffsetUnits={-4}
         />
       </mesh>
       <lineSegments geometry={india.stroke} renderOrder={COAST_ORDER}>
@@ -144,8 +154,10 @@ export default function Landmass({
           color={land}
           transparent
           side={THREE.DoubleSide}
-          depthTest={false}
           depthWrite={false}
+          polygonOffset
+          polygonOffsetFactor={-3}
+          polygonOffsetUnits={-3}
         />
       </mesh>
       <lineSegments geometry={world.stroke} position={[0, -0.02, 0]} renderOrder={COAST_ORDER}>

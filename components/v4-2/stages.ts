@@ -31,6 +31,14 @@ export interface ExplorerRoute {
    */
   approach?: boolean;
   label?: string;
+  /**
+   * How far out (in map units) the approach starts, along the route's real
+   * bearing. Defaults to a fixed distance sized for a close-in camera — set
+   * this explicitly (e.g. a share of the guest's real distance) when the
+   * stage pulls back much further, so the flight still reads as a real
+   * journey rather than a hop that starts right next to the destination.
+   */
+  approachRange?: number;
 }
 
 export interface ExplorerCamera {

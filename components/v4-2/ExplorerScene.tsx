@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
 import { Canvas, useThree, type RootState } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -75,10 +75,6 @@ const DAY_PALETTE: MapPalette = {
   vehicleDark: "#6f6b60",
 };
 
-// The ground itself: India's real coastline for the close-in stages, the whole
-// world's for the pulled-back one (see components/v4-2/Landmass.tsx). The sea
-// is the paper, a shade deeper than the page so the sheet reads as a map; the
-// land is tea-stained ochre; the coast is a fine line of the same ink as the type.
 const LAND_COLOR = "#d5b984";
 const OCEAN_COLOR = "#ece2cb";
 const COASTLINE_COLOR = "#1f2a44";
@@ -96,23 +92,26 @@ const APPROACH_HEIGHT = 7;
  * bearing of the origin, gliding down to touch the destination. Bowed a little
  * sideways so guests from the same quarter don't fly in single file.
  */
-function approachCurve(from: MapPoint, to: MapPoint, bow = 0): THREE.Curve<THREE.Vector3> {
+function approachCurve(from: MapPoint, to: MapPoint, bow = 0, range = APPROACH_RANGE): THREE.Curve<THREE.Vector3> {
   const dx = from.x - to.x;
   const dz = from.z - to.z;
   const length = Math.hypot(dx, dz) || 1;
   const dir = { x: dx / length, z: dz / length };
   const side = { x: dir.z, z: -dir.x };
-  const lateral = bow * APPROACH_RANGE;
-  const at = (range: number, height: number, sway: number) =>
+  const lateral = bow * range;
+  // Cruising height scales with range, so a long-haul approach still arcs
+  // gracefully rather than skimming the ground for most of a much longer hop
+  const height = APPROACH_HEIGHT * (range / APPROACH_RANGE);
+  const at = (r: number, h: number, sway: number) =>
     new THREE.Vector3(
-      to.x + dir.x * range + side.x * sway,
-      height,
-      to.z + dir.z * range + side.z * sway,
+      to.x + dir.x * r + side.x * sway,
+      h,
+      to.z + dir.z * r + side.z * sway,
     );
   return new THREE.CubicBezierCurve3(
-    at(APPROACH_RANGE, APPROACH_HEIGHT, 0),
-    at(APPROACH_RANGE * 0.6, APPROACH_HEIGHT * 0.85, lateral),
-    at(APPROACH_RANGE * 0.2, 2.2, lateral * 0.5),
+    at(range, height, 0),
+    at(range * 0.6, height * 0.85, lateral),
+    at(range * 0.2, 2.2, lateral * 0.5),
     at(0, GROUND_LIFT, 0),
   );
 }
@@ -159,6 +158,11 @@ export interface ExplorerSceneProps {
   /** Where 0° longitude, 0° latitude falls, so the graticule lines up with real meridians. */
   gridOrigin: MapPoint;
   active: boolean;
+  fallback?: ReactNode;
+  palette?: MapPalette;
+  landColor?: string;
+  oceanColor?: string;
+  coastlineColor?: string;
 }
 
 interface Pose {
@@ -227,7 +231,11 @@ function Explorer({
   focus,
   centre,
   gridOrigin,
-}: Omit<ExplorerSceneProps, "active">) {
+  palette = DAY_PALETTE,
+  landColor = LAND_COLOR,
+  oceanColor = OCEAN_COLOR,
+  coastlineColor = COASTLINE_COLOR,
+}: Omit<ExplorerSceneProps, "active" | "fallback">) {
   const view = useRef(createViewState());
   const { size } = useThree();
   // Rendered client-only (dynamic import with ssr: false), so window is available at first render.
@@ -242,7 +250,7 @@ function Explorer({
       routes.map((route) => ({
         air: airCurve(route.from, route.to, route.bow),
         ground: route.head === "vehicle" ? groundCurve(route.from, route.to) : null,
-        approach: route.approach ? approachCurve(route.from, route.to, route.bow) : null,
+        approach: route.approach ? approachCurve(route.from, route.to, route.bow, route.approachRange) : null,
       })),
     [routes],
   );
@@ -462,16 +470,16 @@ function Explorer({
         dampingFactor={0.06}
       />
       <CameraSync />
-      <Atmosphere view={view} palette={DAY_PALETTE} />
+      <Atmosphere view={view} palette={palette} />
       <Landmass
         view={view}
         gridOrigin={gridOrigin}
-        land={LAND_COLOR}
-        ocean={OCEAN_COLOR}
-        coastline={COASTLINE_COLOR}
+        land={landColor}
+        ocean={oceanColor}
+        coastline={coastlineColor}
         coastlineOpacity={COASTLINE_OPACITY}
       />
-      <Graticule view={view} origin={gridOrigin} palette={DAY_PALETTE} />
+      <Graticule view={view} origin={gridOrigin} palette={palette} />
 
       {routes.map((route, index) => (
         <group key={route.id}>
@@ -482,7 +490,7 @@ function Explorer({
               ghost={route.ghost}
               state={routeStates[index]}
               view={view}
-              palette={DAY_PALETTE}
+              palette={palette}
             />
           )}
           <Traveller
@@ -490,33 +498,34 @@ function Explorer({
             kind={route.head === "dot" ? "dot" : (route.vehicleKind ?? kind)}
             state={travellerStates[index]}
             view={view}
-            palette={DAY_PALETTE}
+            palette={palette}
             label={route.approach ? route.label : undefined}
           />
         </group>
       ))}
 
       {pins.map((pin) => (
-        <PinMarker key={pin.stop.city} {...pin} view={view} palette={DAY_PALETTE} />
+        <PinMarker key={pin.stop.city} {...pin} view={view} palette={palette} />
       ))}
       {places.map((place) => (
-        <PlaceMarker key={place.label} {...place} view={view} palette={DAY_PALETTE} />
+        <PlaceMarker key={place.label} {...place} view={view} palette={palette} />
       ))}
-      <Clouds view={view} centre={centre} palette={DAY_PALETTE} />
+      <Clouds view={view} centre={centre} palette={palette} />
     </>
   );
 }
 
-export default function ExplorerScene({ active, ...props }: ExplorerSceneProps) {
+export default function ExplorerScene({ active, fallback, palette = DAY_PALETTE, ...props }: ExplorerSceneProps) {
   return (
     <Canvas
+      fallback={fallback}
       dpr={[1, 1.5]}
       frameloop={active ? "always" : "never"}
       camera={{ position: [0, 30, 40], fov: FOV, near: 0.5, far: 4000 }}
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-      onCreated={({ gl }) => gl.setClearColor(DAY_PALETTE.sky)}
+      onCreated={({ gl }) => gl.setClearColor(palette.sky)}
     >
-      <Explorer {...props} />
+      <Explorer {...props} palette={palette} />
     </Canvas>
   );
 }

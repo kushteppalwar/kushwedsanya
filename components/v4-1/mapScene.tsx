@@ -698,6 +698,7 @@ export function PinMarker({
   align,
   color = AMBER,
   hideBeyond,
+  compactLabel = false,
   view,
   palette = NIGHT_PALETTE,
 }: {
@@ -707,6 +708,7 @@ export function PinMarker({
   color?: string;
   /** Camera fit beyond which the pin fades out. */
   hideBeyond?: number;
+  compactLabel?: boolean;
   view: ViewRef;
   palette?: MapPalette;
 }) {
@@ -778,13 +780,13 @@ export function PinMarker({
           }`}
           style={{ transform: align === "start" ? "translate(0, -50%)" : "translate(-100%, -50%)" }}
         >
-          <p className="font-serif text-3xl leading-none text-(--jm-ink)">{stop.city}</p>
-          <p className="mt-1.5 text-[0.7rem] font-medium tracking-[0.3em] text-(--jm-muted) uppercase">
+          <p className={`font-serif ${compactLabel ? "text-lg" : "text-3xl"} leading-none text-(--jm-ink)`}>{stop.city}</p>
+          <p className={`mt-1.5 ${compactLabel ? "text-[0.55rem] tracking-[0.2em]" : "text-[0.7rem] tracking-[0.3em]"} font-medium text-(--jm-muted) uppercase`}>
             {stop.state}
           </p>
-          <p className="mt-0.5 font-script text-2xl leading-tight" style={{ color }}>
+          {!compactLabel && <p className="mt-0.5 font-script text-2xl leading-tight" style={{ color }}>
             {stop.person}
-          </p>
+          </p>}
         </div>
       </Html>
     </group>
@@ -795,12 +797,18 @@ export function PinMarker({
 export function PlaceMarker({
   point,
   label,
+  showLabel = true,
+  compactLabel = false,
+  labelAlign = "start",
   hideBeyond,
   view,
   palette = NIGHT_PALETTE,
 }: {
   point: MapPoint;
   label: string;
+  showLabel?: boolean;
+  compactLabel?: boolean;
+  labelAlign?: "start" | "end";
   /** Camera fit beyond which the label fades out, so crowded regions stay legible when zoomed out. */
   hideBeyond?: number;
   view: ViewRef;
@@ -827,15 +835,17 @@ export function PlaceMarker({
         <sphereGeometry args={[1, 10, 10]} />
         <meshStandardMaterial color={palette.ink} emissive={palette.ink} emissiveIntensity={0.6} />
       </mesh>
-      <Html position={[3, 0, 0]} style={{ pointerEvents: "none" }} zIndexRange={[10, 0]}>
-        <div
-          ref={labelRef}
-          className="whitespace-nowrap text-[0.7rem] font-medium tracking-[0.3em] uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
-          style={{ transform: "translate(0, -50%)", opacity: PLACE_OPACITY, color: "var(--jm-muted)" }}
-        >
-          {label}
-        </div>
-      </Html>
+      {showLabel && (
+        <Html position={[labelAlign === "end" ? -12 : 3, 0, 0]} style={{ pointerEvents: "none" }} zIndexRange={[10, 0]}>
+          <div
+            ref={labelRef}
+            className={`whitespace-nowrap font-medium uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] ${compactLabel ? "text-[0.52rem] tracking-[0.1em]" : "text-[0.7rem] tracking-[0.3em]"}`}
+            style={{ transform: labelAlign === "end" ? "translate(-100%, -50%)" : "translate(0, -50%)", opacity: PLACE_OPACITY, color: "var(--jm-muted)" }}
+          >
+            {label}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }

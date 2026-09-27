@@ -432,7 +432,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
             </label>
 
             <label className={styles.formField}>
-              <span>Total people travelling with you, including yourself</span>
+              <span>Number of guests attending, including you</span>
               <input name="partySize" type="number" min="1" max="20" required placeholder="Number of guests" />
             </label>
 

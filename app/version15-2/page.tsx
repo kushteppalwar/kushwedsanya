@@ -178,7 +178,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
       id: "mandap-puja",
       title: "Mandap Puja",
       imageSrc: "/v15-2/mandap-puja-poster.jpg",
-      videoSrc: null,
+      videoSrc: "/v15-2/mandap.mp4",
       date: "Sunday, 22 November 2026",
       time: "",
       dressCode: [],

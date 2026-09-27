@@ -190,7 +190,7 @@ export default function Version15Page({ invitation }: { invitation?: InvitationO
     },
     {
       id: "sangeet",
-      title: "Sangeet",
+      title: "Tilak & Sangeet",
       imageSrc: "/v15-2/sangeet-poster.jpg",
       videoSrc: "/v15-2/sangeet.mp4",
       date: "Monday, 23 November 2026",

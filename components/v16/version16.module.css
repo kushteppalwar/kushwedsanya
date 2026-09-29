@@ -367,7 +367,20 @@
 .mealLine { margin: 4px 0 0; color: #ffedc2; font-size: 1.05rem; font-weight: 700; text-shadow: 0 1px 2px rgba(6, 3, 2, 1), 0 2px 8px rgba(6, 3, 2, .9); }
 .eventRoom { margin: 4px auto 0; color: #ffedc2; font-size: 1.08rem; font-weight: 700; line-height: 1.24; text-shadow: 0 1px 2px rgba(6, 3, 2, 1), 0 2px 8px rgba(6, 3, 2, .9); }
 .eventRoom span { color: #f4dfab; }
-.mapLink { color: #f9e6b4; font-weight: 700; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.mapLink {
+  display: inline-flex;
+  min-height: 44px;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff0c8;
+  font-weight: 700;
+  text-decoration: none;
+}
+.mapLink span { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.mapLink svg { width: 18px; height: 18px; flex: 0 0 18px; }
+.mapLink:hover span { text-decoration-thickness: 2px; }
 
 /* Dress code sits under the main text, on the photo too — no plate anymore. */
 .dressPlate {

@@ -90,7 +90,7 @@ const allCelebrations: Celebration[] = [
     imageSrc: "/v15-2/sangeet-poster.jpg",
     videoSrc: "/v15-2/sangeet.mp4",
     date: "Monday, 23 November 2026",
-    time: "7:30 pm onwards",
+    time: "7:30",
     hall: "Pacific 2",
     hallType: "Hall",
     venue: "The Ocean Pearl Gardenia",
@@ -104,7 +104,7 @@ const allCelebrations: Celebration[] = [
     imageSrc: "/v15-2/haldi-poster.jpg",
     videoSrc: "/v15-2/haldi.mp4",
     date: "Tuesday, 24 November 2026",
-    time: "11:00 am",
+    time: "10:00 am",
     hall: "Pool Side",
     hallType: "Area",
     venue: "The Ocean Pearl Gardenia",
@@ -132,7 +132,7 @@ const allCelebrations: Celebration[] = [
     imageSrc: "/v15-2/reception-poster.jpg",
     videoSrc: "/v15-2/reception.mp4",
     date: "Saturday, 28 November 2026",
-    time: "8:00 pm",
+    time: "7:30 pm",
     venue: "Swastik Banquet Lawns (Mayfield)",
     city: "Pune",
     dressCode: ["Western attire"],
@@ -235,52 +235,94 @@ function MapJourney({ direction }: { direction: "north" | "home" }) {
     x: (Math.min(...allOrigins.map((place) => place.x)) + Math.max(...allOrigins.map((place) => place.x))) / 2,
     z: (Math.min(...allOrigins.map((place) => place.z)) + Math.max(...allOrigins.map((place) => place.z))) / 2,
   };
+  // The India leg gets its own tighter camera — pulling all the way out to
+  // the world fit in one step made the India routes (short hops next to a
+  // whole-planet view) finish almost too fast to read, so the domestic and
+  // international arrivals now read as two distinct beats instead of one.
+  const indiaOrigins = [a, b, ...indiaGuests.map(arrivalPoint)];
+  const indiaLook = {
+    x: (Math.min(...indiaOrigins.map((place) => place.x)) + Math.max(...indiaOrigins.map((place) => place.x))) / 2,
+    z: (Math.min(...indiaOrigins.map((place) => place.z)) + Math.max(...indiaOrigins.map((place) => place.z))) / 2,
+  };
+  const indiaRoutes = ["trip", "india-*"];
   const arrivalRoutes = ["trip", "india-*", "world-*"];
-  const stages: ExplorerStage[] = [
-    {
-      key: "origin",
-      short: northbound ? "Pune sets out" : "The way home",
-      camera: { look: middle, fit: 26, portraitFit: 31, pitch: 48 },
-      drawn: [],
-    },
-    {
-      key: "flight",
-      short: "Pune to Delhi",
-      camera: { look: middle, fit: 26, portraitFit: 31, pitch: 48 },
-      drawn: ["trip"],
-      looping: ["trip"],
-    },
-    {
-      key: "everyone",
-      short: "Everyone is coming",
-      camera: { look: everyoneLook, fit: 245, portraitFit: 350, pitch: 50 },
-      drawn: arrivalRoutes,
-      looping: arrivalRoutes,
-      flight: 2.2,
-    },
-    {
-      key: "arrival",
-      short: "Arrive in Delhi",
-      camera: { look: b, fit: 20, portraitFit: 23, pitch: 48 },
-      // Everyone keeps arriving here too — world guests aren't drawn as a
-      // line (they never were), but they still need to be in `looping` or
-      // they're simply hidden for the whole stage.
-      drawn: ["trip", "india-*"],
-      looping: arrivalRoutes,
-      flight: 2.2,
-    },
-  ];
+  const stages: ExplorerStage[] = northbound
+    ? [
+        {
+          key: "origin",
+          short: "Pune sets out",
+          camera: { look: middle, fit: 26, portraitFit: 31, pitch: 48 },
+          drawn: [],
+        },
+        {
+          key: "flight",
+          short: "Pune to Delhi",
+          camera: { look: middle, fit: 26, portraitFit: 31, pitch: 48 },
+          drawn: ["trip"],
+          looping: ["trip"],
+        },
+        {
+          key: "india",
+          short: "Across India",
+          camera: { look: indiaLook, fit: 42, portraitFit: 50, pitch: 50 },
+          drawn: indiaRoutes,
+          looping: indiaRoutes,
+          flight: 2.2,
+        },
+        {
+          key: "world",
+          short: "From around the world",
+          camera: { look: everyoneLook, fit: 245, portraitFit: 350, pitch: 50 },
+          drawn: arrivalRoutes,
+          looping: arrivalRoutes,
+          flight: 2.2,
+        },
+        {
+          key: "arrival",
+          short: "Arrive in Delhi",
+          camera: { look: b, fit: 20, portraitFit: 23, pitch: 48 },
+          // Keep the India routes in view for the Delhi arrival; the overseas
+          // routes were shown on the world stage just before this close-up.
+          drawn: ["trip", "india-*"],
+          looping: indiaRoutes,
+          flight: 2.2,
+        },
+      ]
+    : [
+        {
+          key: "origin",
+          short: "Leaving Delhi",
+          camera: { look: middle, fit: 26, portraitFit: 31, pitch: 48 },
+          drawn: [],
+        },
+        {
+          key: "flight",
+          short: "Delhi to Pune",
+          camera: { look: middle, fit: 26, portraitFit: 31, pitch: 48 },
+          drawn: ["trip"],
+          looping: ["trip"],
+        },
+        {
+          key: "arrival-home",
+          short: "Back in Pune",
+          camera: { look: b, fit: 20, portraitFit: 23, pitch: 48 },
+          drawn: ["trip"],
+          parked: ["trip"],
+          flight: 2.2,
+        },
+      ];
   const pins: Atlas3DPin[] = [
     { point: point(pune), stop: pune, align: northbound ? "end" : "start", color: "#873b43", compactLabel: true, hideBeyond: 110 },
     { point: point(delhi), stop: delhi, align: northbound ? "start" : "end", color: "#873b43", compactLabel: true, hideBeyond: 110 },
   ];
-  // Keep every origin visible as a small dot; the names sit in the readable
-  // paper caption below instead of crowding the compact phone map.
+  // Every origin gets its name on the map now that India has its own
+  // close-in stage to show them in — hideBeyond keeps the India labels off
+  // the pulled-back world shot, where they'd just crowd the view.
   const places: Atlas3DPlace[] = northbound
     ? guestOrigins.map((place) => ({
         point: arrivalPoint(place),
         label: place.city,
-        showLabel: !indiaGuests.includes(place),
+        showLabel: true,
         compactLabel: true,
         labelAlign: place.lon > 100 ? "end" : "start",
         hideBeyond: indiaGuests.includes(place) ? 105 : undefined,
@@ -299,37 +341,43 @@ function MapJourney({ direction }: { direction: "north" | "home" }) {
     if (!active) return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) {
-      const settleImmediately = () => setStageIndex(2);
+      const settleImmediately = () => setStageIndex(stages.length - 1);
       settleImmediately();
       return;
     }
     const resetToStart = () => setStageIndex(0);
     resetToStart();
     const start = window.setTimeout(() => setStageIndex(1), 400);
-    const arrive = window.setTimeout(() => setStageIndex(2), 3200);
-    const settle = window.setTimeout(() => setStageIndex(3), 12500);
+    const next = window.setTimeout(() => setStageIndex(2), 3200);
+    const world = northbound ? window.setTimeout(() => setStageIndex(3), 8200) : undefined;
+    const settle = northbound ? window.setTimeout(() => setStageIndex(4), 13200) : undefined;
     return () => {
       window.clearTimeout(start);
-      window.clearTimeout(arrive);
-      window.clearTimeout(settle);
+      window.clearTimeout(next);
+      if (world) window.clearTimeout(world);
+      if (settle) window.clearTimeout(settle);
     };
-  }, [active, northbound]);
+  }, [active, northbound, stages.length]);
 
   const fallback = <MapFallback />;
   const chapterText = !northbound
     ? "After Delhi, the celebrations return to Pune."
     : stageIndex === 1
-      ? "From Pune and cities across India, everyone is making their way to Delhi."
+      ? "Kush's journey from Pune to Delhi begins the celebrations."
       : stageIndex === 2
-        ? "Family and friends are crossing India and oceans to celebrate together."
-        : "Every journey comes together in Delhi for Kush and Sanya.";
+        ? "From cities across India, everyone is making their way to Delhi."
+        : stageIndex === 3
+          ? "And from oceans away, family and friends are crossing continents to be there."
+          : "Every journey comes together in Delhi for Kush and Sanya.";
   const chapterLabel = !northbound
     ? "The way home"
     : stageIndex === 1
-      ? "Across India"
+      ? "Pune to Delhi"
       : stageIndex === 2
-        ? "From near and far"
-        : "Together in Delhi";
+        ? "Across India"
+        : stageIndex === 3
+          ? "From around the world"
+          : "Together in Delhi";
   return (
     <section ref={sectionRef} className={styles.journeyChapter} aria-label={northbound ? "Journey from Pune to Delhi" : "Journey from Delhi to Pune"}>
       <div className={styles.journeyFrame}>
@@ -445,7 +493,16 @@ function EventScene({ event, familyOrder, progress }: { event: Celebration; fami
           {event.lunch && <p className={styles.mealLine}>{event.lunch}</p>}
           <p className={styles.eventRoom}>
             {event.hall && <span>{event.hallType} · {event.hall}<br /></span>}
-            <a className={styles.mapLink} href={event.mapUrl} target="_blank" rel="noreferrer">{event.venue}</a>
+            <a
+              className={styles.mapLink}
+              href={event.mapUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Open ${event.venue} in maps`}
+            >
+              <LocationIcon />
+              <span>{event.venue}</span>
+            </a>
           </p>
         </article>
         {event.dressCode.length > 0 && (
@@ -457,6 +514,16 @@ function EventScene({ event, familyOrder, progress }: { event: Celebration; fami
       </div>
       <div className={styles.handoff} aria-hidden="true"><span>✥</span></div>
     </section>
+  );
+}
+
+function LocationIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+      <path d="M10 18s6-5.35 6-10.05a6 6 0 1 0-12 0C4 12.65 10 18 10 18Z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <circle cx="10" cy="7.8" r="2.05" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="m13.25 13.05 3.45-3.45m-2.55.05h2.5v2.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 

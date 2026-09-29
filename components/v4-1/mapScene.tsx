@@ -631,7 +631,14 @@ export function Traveller({
     const group = groupRef.current;
     if (!group) return;
     group.visible = state.visible;
-    if (!state.visible) return;
+    if (!state.visible) {
+      // Before a route ever starts (or once it's excluded from the current
+      // stage entirely), the group sits at its default (0,0,0) — the map's
+      // own origin — so an un-hidden tag would render fully opaque right on
+      // top of whatever city that stage centres on.
+      if (labelRef.current) labelRef.current.style.opacity = "0";
+      return;
+    }
     const { unitsPerPx, time, reducedMotion } = view.current;
     const t = clamp01(state.t);
     curve.getPointAt(t, scratch.point);
@@ -650,7 +657,14 @@ export function Traveller({
     group.scale.setScalar(VEHICLE_UNIT_PX * unitsPerPx * d * state.scale);
     // The tag projects through this before the renderer would refresh it
     group.updateMatrixWorld();
-    if (labelRef.current) labelRef.current.style.opacity = String(clamp01(state.scale));
+    // Every traveller's tag names where it set out from, so once several are
+    // converging on the same destination — e.g. guests arriving from all
+    // over — their tags would otherwise pile up unreadably right on top of
+    // that city. Fading the tag out over the final stretch keeps it legible
+    // near the origin, where it's actually informative, without cluttering
+    // the arrival point.
+    const approachFade = t > 0.82 ? Math.max(0, 1 - (t - 0.82) / 0.18) : 1;
+    if (labelRef.current) labelRef.current.style.opacity = String(clamp01(state.scale) * approachFade);
   };
 
   const Vehicle = kind === "dot" ? null : vehicles[kind];
@@ -662,7 +676,7 @@ export function Traveller({
           <div
             ref={labelRef}
             className="whitespace-nowrap rounded-full border border-(--jm-line) bg-(--jm-bg)/90 px-2.5 py-1 text-[0.6rem] font-semibold tracking-[0.22em] text-(--jm-ink) uppercase shadow-[0_6px_18px_-10px_rgba(0,0,0,0.5)]"
-            style={{ transform: "translate(-50%, -100%)" }}
+            style={{ transform: "translate(-50%, -100%)", opacity: 0 }}
           >
             {label}
           </div>

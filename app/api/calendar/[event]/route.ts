@@ -39,7 +39,7 @@ const events: Record<string, CalendarEvent> = {
   haldi: {
     title: "Haldi",
     date: "2026-11-24",
-    time: "11:00",
+    time: "10:00",
     location: "Pool Side, The Ocean Pearl Gardenia, New Delhi",
     durationMinutes: 120,
     mapUrl: "https://maps.app.goo.gl/CMM7ip63UH2w2Cka7",

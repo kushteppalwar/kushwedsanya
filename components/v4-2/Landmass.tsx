@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { FrameDriver, fitVisibility, type ViewRef } from "@/components/v4-1/mapScene";
+import { createPaperGrainTexture, FrameDriver, fitVisibility, type ViewRef } from "@/components/v4-1/mapScene";
 import { INDIA_OUTLINE } from "@/lib/mapData/india";
+import indiaElevation from "@/lib/mapData/indiaElevation.json";
+import INDIA_STATES from "@/lib/mapData/indiaStates.json";
 import { WORLD_LAND } from "@/lib/mapData/world";
 
 /**
@@ -46,6 +48,146 @@ function buildLand(polygons: Polygons, project: (lon: number, lat: number) => [n
   return { fill, stroke };
 }
 
+type IndiaStateFeature = { name: string; rings: [number, number][][] };
+type IndiaElevationGrid = {
+  bounds: { west: number; east: number; south: number; north: number };
+  width: number;
+  height: number;
+  heightsMetersLE: string;
+  landCellsBits: string;
+};
+const RELIEF_DATA = indiaElevation as IndiaElevationGrid;
+
+const RELIEF_BASE_LIFT = 0.07;
+const FULL_RELIEF_TO_METERS = 1800;
+const LOWLAND_HEIGHT_SCALE = 0.00055;
+const HIGH_MOUNTAIN_HEIGHT_SCALE = 0.0002;
+
+function reliefHeight(elevationMeters: number) {
+  const lowlandHeight = Math.min(elevationMeters, FULL_RELIEF_TO_METERS) * LOWLAND_HEIGHT_SCALE;
+  const mountainHeight = Math.max(0, elevationMeters - FULL_RELIEF_TO_METERS) * HIGH_MOUNTAIN_HEIGHT_SCALE;
+  return lowlandHeight + mountainHeight;
+}
+
+function decodeRelief(grid: IndiaElevationGrid) {
+  const elevationBinary = atob(grid.heightsMetersLE);
+  const elevationBytes = Uint8Array.from(elevationBinary, (value) => value.charCodeAt(0));
+  const elevationView = new DataView(elevationBytes.buffer);
+  const heights = new Uint16Array(elevationBytes.length / 2);
+  for (let i = 0; i < heights.length; i += 1) heights[i] = elevationView.getUint16(i * 2, true);
+
+  const maskBinary = atob(grid.landCellsBits);
+  const landCells = Uint8Array.from(maskBinary, (value) => value.charCodeAt(0));
+  return { heights, landCells };
+}
+
+function elevationAt(grid: IndiaElevationGrid, heights: Uint16Array, lon: number, lat: number) {
+  const { west, east, south, north } = grid.bounds;
+  const gx = THREE.MathUtils.clamp((lon - west) / (east - west) * (grid.width - 1), 0, grid.width - 1);
+  const gy = THREE.MathUtils.clamp((north - lat) / (north - south) * (grid.height - 1), 0, grid.height - 1);
+  const x0 = Math.floor(gx);
+  const y0 = Math.floor(gy);
+  const x1 = Math.min(x0 + 1, grid.width - 1);
+  const y1 = Math.min(y0 + 1, grid.height - 1);
+  const tx = gx - x0;
+  const ty = gy - y0;
+  const a = heights[y0 * grid.width + x0];
+  const b = heights[y0 * grid.width + x1];
+  const c = heights[y1 * grid.width + x0];
+  const d = heights[y1 * grid.width + x1];
+  return (a + (b - a) * tx) * (1 - ty) + (c + (d - c) * tx) * ty;
+}
+
+function reliefColor(height: number) {
+  const stops = [
+    [0, "#9fa47b"],
+    [350, "#b4ae7d"],
+    [1000, "#a8936c"],
+    [2200, "#b19776"],
+    [3800, "#c5ae90"],
+    [5400, "#dfd1b7"],
+    [7000, "#f3ecde"],
+  ] as const;
+  let index = stops.findIndex(([level]) => height <= level);
+  if (index < 0) return new THREE.Color(stops[stops.length - 1][1]);
+  if (index === 0) return new THREE.Color(stops[0][1]);
+  const [lowLevel, lowColor] = stops[index - 1];
+  const [highLevel, highColor] = stops[index];
+  return new THREE.Color(lowColor).lerp(new THREE.Color(highColor), (height - lowLevel) / (highLevel - lowLevel));
+}
+
+function buildReliefGeometry(
+  grid: IndiaElevationGrid,
+  heights: Uint16Array,
+  landCells: Uint8Array,
+  originLon: number,
+  originLat: number,
+) {
+  const positions = new Float32Array(grid.width * grid.height * 3);
+  const colors = new Float32Array(grid.width * grid.height * 3);
+  const uvs = new Float32Array(grid.width * grid.height * 2);
+  const indices: number[] = [];
+  const { west, east, south, north } = grid.bounds;
+
+  for (let row = 0; row < grid.height; row += 1) {
+    const lat = north - row / (grid.height - 1) * (north - south);
+    for (let column = 0; column < grid.width; column += 1) {
+      const lon = west + column / (grid.width - 1) * (east - west);
+      const index = row * grid.width + column;
+      const height = heights[index];
+      const color = reliefColor(height);
+      positions.set([lon - originLon, RELIEF_BASE_LIFT + reliefHeight(height), originLat - lat], index * 3);
+      colors.set([color.r, color.g, color.b], index * 3);
+      uvs.set([column / (grid.width - 1), 1 - row / (grid.height - 1)], index * 2);
+    }
+  }
+
+  for (let row = 0; row < grid.height - 1; row += 1) {
+    for (let column = 0; column < grid.width - 1; column += 1) {
+      const cell = row * (grid.width - 1) + column;
+      if ((landCells[cell >> 3] & (1 << (cell & 7))) === 0) continue;
+      const nw = row * grid.width + column;
+      const ne = nw + 1;
+      const sw = nw + grid.width;
+      const se = sw + 1;
+      indices.push(nw, sw, ne, ne, sw, se);
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+/** Simplified ADM1 rings from geoBoundaries / DataMeet; projected over the real India silhouette. */
+function buildStateLines(
+  project: (lon: number, lat: number) => [number, number],
+  heightAt: (lon: number, lat: number) => number,
+) {
+  const positions: number[] = [];
+  for (const feature of INDIA_STATES as IndiaStateFeature[]) {
+    for (const ring of feature.rings) {
+      for (let i = 0; i < ring.length - 1; i += 1) {
+        const [lon1, lat1] = ring[i];
+        const [lon2, lat2] = ring[i + 1];
+        const [x1, z1] = project(lon1, lat1);
+        const [x2, z2] = project(lon2, lat2);
+        positions.push(
+          x1, RELIEF_BASE_LIFT + reliefHeight(heightAt(lon1, lat1)) + 0.025, z1,
+          x2, RELIEF_BASE_LIFT + reliefHeight(heightAt(lon2, lat2)) + 0.025, z2,
+        );
+      }
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  return geometry;
+}
+
 export interface LandmassProps {
   view: ViewRef;
   /** Where 0° longitude, 0° latitude falls, so the shapes line up with the routes and pins. */
@@ -57,6 +199,8 @@ export interface LandmassProps {
   coastlineOpacity?: number;
   /** Fit beyond which India's detailed outline gives way to the whole-world one. */
   crossfadeAt?: number;
+  /** Add the fine paper grain used by the Version 16 invitation map. */
+  paperTexture?: boolean;
 }
 
 /**
@@ -86,9 +230,15 @@ export default function Landmass({
   coastline,
   coastlineOpacity = 1,
   crossfadeAt = 150,
+  paperTexture = false,
 }: LandmassProps) {
   const originLon = -gridOrigin.x;
   const originLat = gridOrigin.z;
+  const { heights, landCells } = useMemo(() => decodeRelief(RELIEF_DATA), []);
+  const heightAt = useMemo(
+    () => (lon: number, lat: number) => elevationAt(RELIEF_DATA, heights, lon, lat),
+    [heights],
+  );
   // Same convention as `at()` elsewhere (x = lon − origin, z = origin − lat), then laid flat:
   // ShapeGeometry builds in its local XY, and rotating the mesh +90° about X sends that Y to
   // world Z untouched — flip the sign here instead and the map comes out mirrored.
@@ -100,9 +250,28 @@ export default function Landmass({
 
   const india = useMemo(() => buildLand(INDIA_OUTLINE, project), [project]);
   const world = useMemo(() => buildLand(WORLD_LAND, project), [project]);
+  const relief = useMemo(
+    () => buildReliefGeometry(RELIEF_DATA, heights, landCells, originLon, originLat),
+    [heights, landCells, originLon, originLat],
+  );
+  const stateLines = useMemo(() => buildStateLines(project, heightAt), [project, heightAt]);
+  const surfaceTexture = useMemo(
+    () => paperTexture ? createPaperGrainTexture(32, 20) : null,
+    [paperTexture],
+  );
+  const seaTexture = useMemo(
+    () => paperTexture ? createPaperGrainTexture(400) : null,
+    [paperTexture],
+  );
+  useEffect(() => () => {
+    surfaceTexture?.dispose();
+    seaTexture?.dispose();
+  }, [seaTexture, surfaceTexture]);
 
   const indiaFillRef = useRef<THREE.MeshBasicMaterial>(null);
+  const reliefMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
   const indiaStrokeRef = useRef<THREE.LineBasicMaterial>(null);
+  const stateStrokeRef = useRef<THREE.LineBasicMaterial>(null);
   const worldFillRef = useRef<THREE.MeshBasicMaterial>(null);
   const worldStrokeRef = useRef<THREE.LineBasicMaterial>(null);
 
@@ -110,7 +279,9 @@ export default function Landmass({
     const indiaOpacity = fitVisibility(view.current.fit, crossfadeAt);
     const worldOpacity = 1 - indiaOpacity;
     if (indiaFillRef.current) indiaFillRef.current.opacity = indiaOpacity;
+    if (reliefMaterialRef.current) reliefMaterialRef.current.opacity = indiaOpacity;
     if (indiaStrokeRef.current) indiaStrokeRef.current.opacity = indiaOpacity * coastlineOpacity;
+    if (stateStrokeRef.current) stateStrokeRef.current.opacity = indiaOpacity * 0.55;
     if (worldFillRef.current) worldFillRef.current.opacity = worldOpacity;
     if (worldStrokeRef.current) worldStrokeRef.current.opacity = worldOpacity * coastlineOpacity;
   };
@@ -123,12 +294,13 @@ export default function Landmass({
           colours below are exactly the colours you see. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
         <planeGeometry args={[6000, 6000]} />
-        <meshBasicMaterial color={ocean} />
+        <meshBasicMaterial map={seaTexture} color={ocean} />
       </mesh>
 
       <mesh geometry={india.fill} rotation={[Math.PI / 2, 0, 0]} renderOrder={GROUND_ORDER}>
         <meshBasicMaterial
           ref={indiaFillRef}
+          map={surfaceTexture}
           color={land}
           transparent
           side={THREE.DoubleSide}
@@ -136,6 +308,18 @@ export default function Landmass({
           polygonOffset
           polygonOffsetFactor={-4}
           polygonOffsetUnits={-4}
+        />
+      </mesh>
+      <mesh geometry={relief} renderOrder={GROUND_ORDER + 0.1}>
+        <meshStandardMaterial
+          ref={reliefMaterialRef}
+          map={surfaceTexture}
+          vertexColors
+          transparent
+          depthWrite={false}
+          side={THREE.DoubleSide}
+          roughness={1}
+          metalness={0}
         />
       </mesh>
       <lineSegments geometry={india.stroke} renderOrder={COAST_ORDER}>
@@ -148,9 +332,21 @@ export default function Landmass({
         />
       </lineSegments>
 
+      <lineSegments geometry={stateLines} renderOrder={COAST_ORDER + 0.1}>
+        <lineBasicMaterial
+          ref={stateStrokeRef}
+          color="#947b62"
+          transparent
+          opacity={0}
+          depthTest={false}
+          depthWrite={false}
+        />
+      </lineSegments>
+
       <mesh geometry={world.fill} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} renderOrder={GROUND_ORDER}>
         <meshBasicMaterial
           ref={worldFillRef}
+          map={surfaceTexture}
           color={land}
           transparent
           side={THREE.DoubleSide}

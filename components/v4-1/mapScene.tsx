@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame, type RootState } from "@react-three/fiber";
 import { Grid, Html, Line } from "@react-three/drei";
 import type { LineSegments2 } from "three-stdlib";
@@ -60,6 +60,8 @@ export interface MapPalette {
   vehicleBody: string;
   vehicleAccent: string;
   vehicleDark: string;
+  /** Lay a fine paper grain over the printed invitation map surfaces. */
+  paperTexture?: boolean;
 }
 
 export const NIGHT_PALETTE: MapPalette = {
@@ -150,6 +152,54 @@ export function easeInOutCubic(t: number) {
 export function fitVisibility(fit: number, hideBeyond?: number) {
   if (hideBeyond === undefined) return 1;
   return 1 - smoothstep(clamp01((fit - hideBeyond * 0.75) / (hideBeyond * 0.5)));
+}
+
+/** Generate a tiny repeating ivory paper grain for printed-style map surfaces. */
+export function createPaperGrainTexture(repeatX: number, repeatY = repeatX) {
+  const size = 256;
+  const data = new Uint8Array(size * size * 4);
+  let seed = 0x51a7;
+  const random = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 0x100000000;
+  };
+  const fibers = Array.from({ length: 230 }, () => ({
+    x: Math.floor(random() * size),
+    y: Math.floor(random() * size),
+    length: 2 + Math.floor(random() * 9),
+    shade: 219 + Math.floor(random() * 25),
+  }));
+  const fiberShade = new Uint8Array(size * size);
+  for (const fiber of fibers) {
+    for (let step = 0; step < fiber.length; step += 1) {
+      const x = (fiber.x + step) % size;
+      const y = (fiber.y + Math.round(Math.sin(step * 0.55) * 1.5)) % size;
+      fiberShade[y * size + x] = fiber.shade;
+    }
+  }
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const index = y * size + x;
+      const grain = 242 + Math.floor(random() * 14);
+      const value = fiberShade[index] || grain;
+      const offset = index * 4;
+      data[offset] = value;
+      data[offset + 1] = value;
+      data[offset + 2] = value;
+      data[offset + 3] = 255;
+    }
+  }
+
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(repeatX, repeatY);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 /**
@@ -284,6 +334,16 @@ export function Terrain({
   corridor: MapPoint[];
   palette?: MapPalette;
 }) {
+  const paperTextures = useMemo(() => {
+    if (!palette.paperTexture) return null;
+    return { terrain: createPaperGrainTexture(8), plain: createPaperGrainTexture(400) };
+  }, [palette.paperTexture]);
+
+  useEffect(() => () => {
+    paperTextures?.terrain.dispose();
+    paperTextures?.plain.dispose();
+  }, [paperTextures]);
+
   const geometry = useMemo(() => {
     const geo = new THREE.PlaneGeometry(PATCH_SIZE, PATCH_SIZE, 112, 112);
     geo.rotateX(-Math.PI / 2);
@@ -336,12 +396,12 @@ export function Terrain({
   return (
     <>
       <mesh geometry={geometry}>
-        <meshStandardMaterial vertexColors flatShading roughness={0.95} metalness={0} />
+        <meshStandardMaterial map={paperTextures?.terrain ?? null} vertexColors flatShading roughness={0.95} metalness={0} />
       </mesh>
       {/* The plain the rest of the world sits on, well below the grid to keep the depth buffer honest */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[centre.x, -0.15, centre.z]}>
         <planeGeometry args={[8000, 8000]} />
-        <meshStandardMaterial color={palette.terrainLow} roughness={1} metalness={0} />
+        <meshStandardMaterial map={paperTextures?.plain ?? null} color={palette.terrainLow} roughness={1} metalness={0} />
       </mesh>
     </>
   );

@@ -207,6 +207,20 @@
   letter-spacing: 2px;
 }
 
+.mapAttribution {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  z-index: 2;
+  padding: 2px 4px;
+  border-radius: 2px;
+  background: rgba(247, 240, 229, .82);
+  color: #665747;
+  font-size: 7px;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
 .mapEdge {
   position: absolute;
   inset: 0;

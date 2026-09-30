@@ -52,6 +52,7 @@ const invitationMapPalette: MapPalette = {
   vehicleBody: "#573e2b",
   vehicleAccent: "#a7484f",
   vehicleDark: "#6f4f46",
+  paperTexture: true,
 };
 
 const guestOrigins: MapPlace[] = weddingConfig.journey?.guestOrigins ?? [];
@@ -399,6 +400,7 @@ function MapJourney({ direction }: { direction: "north" | "home" }) {
             oceanColor="#f7f0e5"
             coastlineColor="#654449"
           />
+          <small className={styles.mapAttribution}>Elevation: Mapzen Terrain Tiles · State boundaries: geoBoundaries / DataMeet</small>
           <div className={styles.mapEdge} aria-hidden="true" />
         </div>
         <div className={styles.journeyCaption}>

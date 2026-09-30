@@ -477,6 +477,7 @@ function Explorer({
         land={landColor}
         ocean={oceanColor}
         coastline={coastlineColor}
+        paperTexture={palette.paperTexture}
         coastlineOpacity={COASTLINE_OPACITY}
       />
       <Graticule view={view} origin={gridOrigin} palette={palette} />

@@ -510,6 +510,7 @@ function EventScene({ event, familyOrder, familyInvite = false, navigationEnable
           className={`${styles.eventVideo} ${videoReady ? styles.videoReady : ""}`}
           muted
           playsInline
+          loop={familyInvite}
           preload="none"
           poster={event.imageSrc}
           aria-hidden="true"
@@ -786,7 +787,12 @@ export default function Version16Experience({ invitation }: { invitation: Versio
         </div>
       </section>
       <RSVP familyOrder={invitation.familyOrder} />
-      <footer className={styles.footer}>With love, Kush &amp; Sanya <span aria-hidden="true">✦</span></footer>
+      <footer className={styles.footer}>
+        {invitation.familyInvite
+          ? `With love, ${invitation.familyOrder === "bride" ? "Gupta" : "Teppalwar"} family`
+          : <>With love, Kush &amp; Sanya</>}
+        <span aria-hidden="true">✦</span>
+      </footer>
       {invitation.backgroundMusic && <BackgroundMusic />}
     </main>
   );

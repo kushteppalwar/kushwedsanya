@@ -15,6 +15,8 @@ export type Version16Invitation = {
   familyOrder: "groom" | "bride";
   eventIds: EventId[];
   familyInvite?: boolean;
+  navigationEnabled?: boolean;
+  backgroundMusic?: boolean;
 };
 
 type Celebration = {
@@ -147,6 +149,32 @@ const ExplorerScene = dynamic(() => import("@/components/v4-2/ExplorerScene"), {
   loading: () => <MapFallback />,
 });
 
+function scrollToNextInvitePage(source: HTMLElement) {
+  const currentPage = source.closest<HTMLElement>("[data-invitation-page]");
+  if (!currentPage) return;
+  const pages = Array.from(document.querySelectorAll<HTMLElement>("[data-invitation-page]"));
+  const nextPage = pages[pages.indexOf(currentPage) + 1];
+  if (!nextPage) return;
+  const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  nextPage.scrollIntoView({ behavior, block: "start" });
+}
+
+function NextPageButton({ className, label = "Go to the next page" }: { className: string; label?: string }) {
+  return (
+    <button
+      className={className}
+      type="button"
+      onClick={(event) => scrollToNextInvitePage(event.currentTarget)}
+      aria-label={label}
+      title={label}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 4v15m-6-6 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
 function MapFallback() {
   return (
     <svg className={styles.mapFallback} viewBox="0 0 360 250" role="img" aria-label="A route connecting Pune and Delhi">
@@ -168,7 +196,7 @@ function MapFallback() {
   );
 }
 
-function MapJourney({ direction, familyInvite = false }: { direction: "north" | "home"; familyInvite?: boolean }) {
+function MapJourney({ direction, familyInvite = false, navigationEnabled = false }: { direction: "north" | "home"; familyInvite?: boolean; navigationEnabled?: boolean }) {
   const sectionRef = useRef<HTMLElement>(null);
   const [active, setActive] = useState(false);
   const [stageIndex, setStageIndex] = useState(0);
@@ -363,7 +391,7 @@ function MapJourney({ direction, familyInvite = false }: { direction: "north" | 
 
   const fallback = <MapFallback />;
   const chapterText = !northbound
-    ? "After Delhi, the celebrations return to Pune."
+    ? "The celebrations continue in Pune."
     : stageIndex === 1
       ? "Kush's journey from Pune to Delhi begins the celebrations."
       : stageIndex === 2
@@ -374,7 +402,7 @@ function MapJourney({ direction, familyInvite = false }: { direction: "north" | 
             ? "Where every journey comes together."
             : "Every journey comes together in Delhi for Kush and Sanya.";
   const chapterLabel = !northbound
-    ? "The way home"
+    ? "The final leg"
     : stageIndex === 1
       ? "Pune to Delhi"
       : stageIndex === 2
@@ -383,7 +411,13 @@ function MapJourney({ direction, familyInvite = false }: { direction: "north" | 
           ? "From around the world"
           : "Together in Delhi";
   return (
-    <section ref={sectionRef} className={styles.journeyChapter} aria-label={northbound ? "Journey from Pune to Delhi" : "Journey from Delhi to Pune"}>
+    <section
+      ref={sectionRef}
+      className={styles.journeyChapter}
+      id={northbound ? "journey-pune-delhi" : "journey-delhi-pune"}
+      data-invitation-page=""
+      aria-label={northbound ? "Journey from Pune to Delhi" : "Journey from Delhi to Pune"}
+    >
       <div className={styles.journeyFrame}>
         <div className={styles.mapViewport} role="img" aria-label={`A three-dimensional map showing travel from ${from.city} to ${to.city}`}>
           <ExplorerScene
@@ -412,11 +446,12 @@ function MapJourney({ direction, familyInvite = false }: { direction: "north" | 
           <span className={styles.cityRoute}>{from.city}<span aria-hidden="true"> → </span>{to.city}</span>
         </div>
       </div>
+      {navigationEnabled && <NextPageButton className={styles.journeyArrow} label="Continue to the next page" />}
     </section>
   );
 }
 
-function EventScene({ event, familyOrder, familyInvite = false, progress }: { event: Celebration; familyOrder: "groom" | "bride"; familyInvite?: boolean; progress?: string }) {
+function EventScene({ event, familyOrder, familyInvite = false, navigationEnabled = false, progress }: { event: Celebration; familyOrder: "groom" | "bride"; familyInvite?: boolean; navigationEnabled?: boolean; progress?: string }) {
   const wrapperRef = useRef<HTMLElement>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -466,6 +501,7 @@ function EventScene({ event, familyOrder, familyInvite = false, progress }: { ev
       ref={wrapperRef}
       className={`${styles.eventScene} ${visible ? styles.eventVisible : ""}`}
       id={event.id}
+      data-invitation-page=""
       aria-labelledby={`${event.id}-title`}
     >
       <div className={styles.eventArtwork}>
@@ -517,7 +553,9 @@ function EventScene({ event, familyOrder, familyInvite = false, progress }: { ev
           </div>
         )}
       </div>
-      <div className={styles.handoff} aria-hidden="true"><span>✥</span></div>
+      {navigationEnabled
+        ? <NextPageButton className={styles.handoff} label={`Continue after ${eventTitle}`} />
+        : <div className={styles.handoff} aria-hidden="true"><span>✥</span></div>}
     </section>
   );
 }
@@ -561,7 +599,7 @@ function RSVP({ familyOrder }: { familyOrder: "groom" | "bride" }) {
   }
 
   return (
-    <section className={styles.rsvpSection} id="rsvp" aria-labelledby="rsvp-title">
+    <section className={styles.rsvpSection} id="rsvp" data-invitation-page="" aria-labelledby="rsvp-title">
       <div className={styles.rsvpFrame}>
         <div className={styles.rsvpPanel}>
           <span className={styles.chapterKicker}>We would love to celebrate with you</span>
@@ -583,6 +621,79 @@ function RSVP({ familyOrder }: { familyOrder: "groom" | "bride" }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function BackgroundMusic() {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [muted, setMuted] = useState(false);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = 0.28;
+
+    // Try to start on page load. Mobile browsers may require a user gesture,
+    // so retry after the guest first taps or presses a key anywhere in the page.
+    void audio.play().catch(() => undefined);
+    const resumeAfterGesture = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest("[data-background-music-toggle]")) return;
+      if (!audio.paused || audio.muted) return;
+      void audio.play().catch(() => undefined);
+    };
+    document.addEventListener("pointerdown", resumeAfterGesture, true);
+    document.addEventListener("keydown", resumeAfterGesture, true);
+    return () => {
+      document.removeEventListener("pointerdown", resumeAfterGesture, true);
+      document.removeEventListener("keydown", resumeAfterGesture, true);
+      audio.pause();
+    };
+  }, []);
+
+  function toggleMusic() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      audio.muted = false;
+      setMuted(false);
+      void audio.play().catch(() => undefined);
+      return;
+    }
+    audio.muted = !audio.muted;
+    setMuted(audio.muted);
+  }
+
+  const controlLabel = playing ? (muted ? "Unmute wedding music" : "Mute wedding music") : "Play wedding music";
+
+  return (
+    <>
+      <audio
+        ref={audioRef}
+        src="/audio/kesariya-instrumental.m4a"
+        loop
+        preload="auto"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+      />
+      <button
+        className={`${styles.musicControl} ${muted || !playing ? styles.musicControlQuiet : ""}`}
+        type="button"
+        data-background-music-toggle
+        onClick={toggleMusic}
+        aria-label={controlLabel}
+        aria-pressed={playing && !muted}
+        title={controlLabel}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M10 18V5l10-2v13M10 8l10-2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <ellipse cx="7" cy="18" rx="3" ry="2.2" fill="currentColor" />
+          <ellipse cx="17" cy="16" rx="3" ry="2.2" fill="currentColor" />
+          {(muted || !playing) && <path d="M3 3l18 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />}
+        </svg>
+      </button>
+    </>
   );
 }
 
@@ -620,7 +731,7 @@ export default function Version16Experience({ invitation }: { invitation: Versio
     return first === last ? `${first} November 2026` : `${first}–${last} November 2026`;
   }, [selected]);
   const delhiEvents = selected.filter((event) => event.city === "New Delhi");
-  const firstEventId = selected[0]?.id ?? "rsvp";
+  const firstPageId = selected[0]?.city === "New Delhi" ? "journey-pune-delhi" : selected[0]?.id ?? "story";
   let delhiCount = 0;
   const flow: ReactNode[] = [];
   let outboundInserted = false;
@@ -628,21 +739,20 @@ export default function Version16Experience({ invitation }: { invitation: Versio
 
   selected.forEach((event) => {
     if (event.city === "New Delhi" && !outboundInserted) {
-      flow.push(<MapJourney key="journey-pune-delhi" direction="north" familyInvite={invitation.familyInvite} />);
+      flow.push(<MapJourney key="journey-pune-delhi" direction="north" familyInvite={invitation.familyInvite} navigationEnabled={invitation.navigationEnabled} />);
       outboundInserted = true;
     }
     if (event.id === "reception" && !returnInserted && hasDelhiEvents) {
-      flow.push(<div className={styles.returnChapter} key="return-heading"><span className={styles.chapterKicker}>The final leg</span><h2>And back to Pune</h2><p>One last journey, together.</p></div>);
-      flow.push(<MapJourney key="journey-delhi-pune" direction="home" familyInvite={invitation.familyInvite} />);
+      flow.push(<MapJourney key="journey-delhi-pune" direction="home" familyInvite={invitation.familyInvite} navigationEnabled={invitation.navigationEnabled} />);
       returnInserted = true;
     }
     const progress = event.city === "New Delhi" ? `${++delhiCount} of ${delhiEvents.length}` : undefined;
-    flow.push(<EventScene key={event.id} event={event} familyOrder={invitation.familyOrder} familyInvite={invitation.familyInvite} progress={progress} />);
+    flow.push(<EventScene key={event.id} event={event} familyOrder={invitation.familyOrder} familyInvite={invitation.familyInvite} navigationEnabled={invitation.navigationEnabled} progress={progress} />);
   });
 
   return (
     <main className={styles.page}>
-      <section className={styles.cover} id="top" aria-labelledby="cover-title">
+      <section className={styles.cover} id="top" data-invitation-page="" aria-labelledby="cover-title">
         <img className={styles.coverPoster} src="/v15-2/entry-poster.jpg" alt="A hand-painted palace entrance welcoming guests to Kush and Sanya’s wedding" fetchPriority="high" />
         <div className={styles.coverWash} aria-hidden="true" />
         <div className={styles.coverFrame}>
@@ -650,14 +760,16 @@ export default function Version16Experience({ invitation }: { invitation: Versio
           <p className={styles.coverFamilies}>{familyNames} joyfully invite you to celebrate the auspicious union of</p>
           <h1 id="cover-title">{openingNames}</h1>
           <span className={styles.coverDates}>{invitation.familyInvite ? invitationDates : "22–28 November 2026"}</span>
-          <a className={styles.beginButton} href={`#${firstEventId}`}>Begin the journey <span aria-hidden="true">↓</span></a>
+          <div className={styles.coverActions}>
+            <a className={styles.beginButton} href={`#${firstPageId}`}>Begin the journey <span aria-hidden="true">↓</span></a>
+          </div>
         </div>
         <span className={styles.coverOrnament} aria-hidden="true">✥</span>
       </section>
 
       {flow}
       {hasReception && !hasDelhiEvents && <p className={styles.returnChapter}><span className={styles.chapterKicker}>Pune</span></p>}
-      <section className={styles.storySection} aria-labelledby="story-title">
+      <section className={styles.storySection} id="story" data-invitation-page="" aria-labelledby="story-title">
         <div className={styles.storyFrame}>
           <div className={styles.storyPanel}>
             <span className={styles.chapterKicker}>A little of us</span>
@@ -669,11 +781,13 @@ export default function Version16Experience({ invitation }: { invitation: Versio
               loading="lazy"
               decoding="async"
             />
+            {invitation.navigationEnabled && <NextPageButton className={styles.storyArrow} label="Continue to RSVP" />}
           </div>
         </div>
       </section>
       <RSVP familyOrder={invitation.familyOrder} />
       <footer className={styles.footer}>With love, Kush &amp; Sanya <span aria-hidden="true">✦</span></footer>
+      {invitation.backgroundMusic && <BackgroundMusic />}
     </main>
   );
 }

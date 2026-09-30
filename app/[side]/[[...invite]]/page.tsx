@@ -28,5 +28,5 @@ export default async function InviteRoute({ params }: RouteProps) {
       : configuredEvents;
 
   if (!familyOrder || !eventIds) return <InvalidInvite />;
-  return <Version16Experience invitation={{ familyOrder, eventIds, familyInvite: true }} />;
+  return <Version16Experience invitation={{ familyOrder, eventIds, familyInvite: true, navigationEnabled: true, backgroundMusic: true }} />;
 }

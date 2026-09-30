@@ -14,6 +14,7 @@ type EventId = "mandap-puja" | "sakharpuda" | "sangeet" | "haldi" | "shadi" | "r
 export type Version16Invitation = {
   familyOrder: "groom" | "bride";
   eventIds: EventId[];
+  familyInvite?: boolean;
 };
 
 type Celebration = {
@@ -167,7 +168,7 @@ function MapFallback() {
   );
 }
 
-function MapJourney({ direction }: { direction: "north" | "home" }) {
+function MapJourney({ direction, familyInvite = false }: { direction: "north" | "home"; familyInvite?: boolean }) {
   const sectionRef = useRef<HTMLElement>(null);
   const [active, setActive] = useState(false);
   const [stageIndex, setStageIndex] = useState(0);
@@ -369,7 +370,9 @@ function MapJourney({ direction }: { direction: "north" | "home" }) {
         ? "From cities across India, everyone is making their way to Delhi."
         : stageIndex === 3
           ? "And from oceans away, family and friends are crossing continents to be there."
-          : "Every journey comes together in Delhi for Kush and Sanya.";
+          : familyInvite
+            ? "Where every journey comes together."
+            : "Every journey comes together in Delhi for Kush and Sanya.";
   const chapterLabel = !northbound
     ? "The way home"
     : stageIndex === 1
@@ -413,7 +416,7 @@ function MapJourney({ direction }: { direction: "north" | "home" }) {
   );
 }
 
-function EventScene({ event, familyOrder, progress }: { event: Celebration; familyOrder: "groom" | "bride"; progress?: string }) {
+function EventScene({ event, familyOrder, familyInvite = false, progress }: { event: Celebration; familyOrder: "groom" | "bride"; familyInvite?: boolean; progress?: string }) {
   const wrapperRef = useRef<HTMLElement>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -488,7 +491,7 @@ function EventScene({ event, familyOrder, progress }: { event: Celebration; fami
           <span className={styles.cardFlourish} aria-hidden="true">✦</span>
           <h2 id={`${event.id}-title`}>{eventTitle}</h2>
           <div className={styles.cardDivider} aria-hidden="true" />
-          <a className={styles.calendarLink} href={`/api/calendar/${event.id}?side=${familyOrder}`} aria-label={`Add ${eventTitle} to your calendar`}>
+          <a className={styles.calendarLink} href={`/api/calendar/${event.id}?side=${familyOrder}${familyInvite ? "&familyInvite=1" : ""}`} aria-label={`Add ${eventTitle} to your calendar`}>
             <span>{event.date}</span>
             <strong>{event.time}</strong>
           </a>
@@ -586,13 +589,36 @@ function RSVP({ familyOrder }: { familyOrder: "groom" | "bride" }) {
 export default function Version16Experience({ invitation }: { invitation: Version16Invitation }) {
   const selected = useMemo(() => {
     const allowed = new Set(invitation.eventIds);
-    return allCelebrations.filter((event) => allowed.has(event.id));
-  }, [invitation.eventIds]);
+    return allCelebrations
+      .filter((event) => allowed.has(event.id))
+      .map((event) => invitation.familyInvite && invitation.familyOrder === "bride" && event.id === "sakharpuda"
+        ? { ...event, title: "Seemant Poojan", time: "1:00 pm" }
+        : invitation.familyInvite && invitation.familyOrder === "bride" && event.id === "sangeet"
+          ? { ...event, time: "7:00 pm" }
+        : event);
+  }, [invitation.eventIds, invitation.familyInvite, invitation.familyOrder]);
   const firstDelhi = selected.findIndex((event) => event.city === "New Delhi");
   const hasDelhiEvents = firstDelhi !== -1;
   const hasReception = selected.some((event) => event.id === "reception");
   const openingNames = invitation.familyOrder === "bride" ? "Sanya & Kush" : "Kush & Sanya";
-  const familyNames = invitation.familyOrder === "bride" ? "The Gupta and Teppalwar families" : "The Teppalwar and Gupta families";
+  const familyNames = invitation.familyInvite
+    ? invitation.familyOrder === "bride" ? "Gupta and Teppalwar families" : "Teppalwar and Gupta families"
+    : invitation.familyOrder === "bride" ? "The Gupta and Teppalwar families" : "The Teppalwar and Gupta families";
+  const invitationDates = useMemo(() => {
+    const eventDays: Record<EventId, number> = {
+      "mandap-puja": 22,
+      sakharpuda: 23,
+      sangeet: 23,
+      haldi: 24,
+      shadi: 24,
+      reception: 28,
+    };
+    const days = selected.map((event) => eventDays[event.id]);
+    if (!days.length) return "";
+    const first = Math.min(...days);
+    const last = Math.max(...days);
+    return first === last ? `${first} November 2026` : `${first}–${last} November 2026`;
+  }, [selected]);
   const delhiEvents = selected.filter((event) => event.city === "New Delhi");
   const firstEventId = selected[0]?.id ?? "rsvp";
   let delhiCount = 0;
@@ -602,16 +628,16 @@ export default function Version16Experience({ invitation }: { invitation: Versio
 
   selected.forEach((event) => {
     if (event.city === "New Delhi" && !outboundInserted) {
-      flow.push(<MapJourney key="journey-pune-delhi" direction="north" />);
+      flow.push(<MapJourney key="journey-pune-delhi" direction="north" familyInvite={invitation.familyInvite} />);
       outboundInserted = true;
     }
     if (event.id === "reception" && !returnInserted && hasDelhiEvents) {
       flow.push(<div className={styles.returnChapter} key="return-heading"><span className={styles.chapterKicker}>The final leg</span><h2>And back to Pune</h2><p>One last journey, together.</p></div>);
-      flow.push(<MapJourney key="journey-delhi-pune" direction="home" />);
+      flow.push(<MapJourney key="journey-delhi-pune" direction="home" familyInvite={invitation.familyInvite} />);
       returnInserted = true;
     }
     const progress = event.city === "New Delhi" ? `${++delhiCount} of ${delhiEvents.length}` : undefined;
-    flow.push(<EventScene key={event.id} event={event} familyOrder={invitation.familyOrder} progress={progress} />);
+    flow.push(<EventScene key={event.id} event={event} familyOrder={invitation.familyOrder} familyInvite={invitation.familyInvite} progress={progress} />);
   });
 
   return (
@@ -623,7 +649,7 @@ export default function Version16Experience({ invitation }: { invitation: Versio
           <span className={styles.coverKicker}>A celebration across cities</span>
           <p className={styles.coverFamilies}>{familyNames} joyfully invite you to celebrate the auspicious union of</p>
           <h1 id="cover-title">{openingNames}</h1>
-          <span className={styles.coverDates}>22–28 November 2026</span>
+          <span className={styles.coverDates}>{invitation.familyInvite ? invitationDates : "22–28 November 2026"}</span>
           <a className={styles.beginButton} href={`#${firstEventId}`}>Begin the journey <span aria-hidden="true">↓</span></a>
         </div>
         <span className={styles.coverOrnament} aria-hidden="true">✥</span>
@@ -631,6 +657,21 @@ export default function Version16Experience({ invitation }: { invitation: Versio
 
       {flow}
       {hasReception && !hasDelhiEvents && <p className={styles.returnChapter}><span className={styles.chapterKicker}>Pune</span></p>}
+      <section className={styles.storySection} aria-labelledby="story-title">
+        <div className={styles.storyFrame}>
+          <div className={styles.storyPanel}>
+            <span className={styles.chapterKicker}>A little of us</span>
+            <h2 id="story-title">Everything we love has brought us to this moment—and to each other.</h2>
+            <img
+              className={styles.storyLogo}
+              src="/v15-2/kush-sanya-wedding-logo.jpeg"
+              alt="Kush and Sanya’s wedding logo, illustrated with coding, dancing, travel, food, and places they love"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </section>
       <RSVP familyOrder={invitation.familyOrder} />
       <footer className={styles.footer}>With love, Kush &amp; Sanya <span aria-hidden="true">✦</span></footer>
     </main>

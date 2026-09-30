@@ -451,6 +451,49 @@
 .returnChapter h2 { margin: 5px 0 1px; font-size: clamp(2.2rem, 9vw, 3rem); font-weight: 600; line-height: 1.02; }
 .returnChapter p { margin: 3px 0 0; font-size: 1.18rem; }
 
+.storySection {
+  padding: 24px 14px 28px;
+  background:
+    linear-gradient(rgba(245, 237, 225, .68), rgba(245, 237, 225, .8)),
+    url("/v15/rsvp-background.png") center / cover,
+    var(--paper-deep);
+}
+
+.storyFrame {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 6px;
+  border: 1px solid rgba(171, 127, 55, .88);
+  background: rgba(248, 241, 229, .58);
+}
+
+.storyPanel {
+  padding: 20px 14px 16px;
+  border: 1px solid rgba(171, 127, 55, .55);
+  background: rgba(250, 245, 235, .97);
+  text-align: center;
+}
+
+.storyPanel h2 {
+  max-width: 29ch;
+  margin: 5px auto 15px;
+  color: var(--wine);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.3rem, 5.5vw, 1.8rem);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.storyLogo {
+  display: block;
+  width: min(100%, 460px);
+  height: auto;
+  margin: 0 auto;
+  padding: 5px;
+  border: 1px solid rgba(171, 127, 55, .55);
+  background: #f7f0e5;
+}
+
 .rsvpSection {
   padding: 20px 14px 30px;
   background:

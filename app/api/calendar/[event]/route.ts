@@ -84,8 +84,12 @@ export async function GET(
 
   const url = new URL(request.url);
   const isBrideSide = url.searchParams.get("side") === "bride";
-  const title = event === "sakharpuda" && isBrideSide ? "Seemant Poojan" : calendarEvent.title;
-  const start = new Date(`${calendarEvent.date}T${calendarEvent.time}:00+05:30`);
+  const isFamilyInvite = url.searchParams.get("familyInvite") === "1";
+  const brideSeemant = isFamilyInvite && event === "sakharpuda" && isBrideSide;
+  const brideSangeet = isFamilyInvite && event === "sangeet" && isBrideSide;
+  const title = brideSeemant ? "Seemant Poojan" : calendarEvent.title;
+  const time = brideSeemant ? "13:00" : brideSangeet ? "19:00" : calendarEvent.time;
+  const start = new Date(`${calendarEvent.date}T${time}:00+05:30`);
   const end = new Date(start.getTime() + calendarEvent.durationMinutes * 60_000);
   const description = [calendarEvent.description, calendarEvent.mapUrl].filter(Boolean).join("\n");
   const lines = [

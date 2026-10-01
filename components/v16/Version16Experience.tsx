@@ -35,6 +35,8 @@ type Celebration = {
   mapUrl: string;
 };
 
+const START_WEDDING_MUSIC_EVENT = "wedding:start-background-music";
+
 const invitationMapPalette: MapPalette = {
   sky: "#f7f0e5",
   hemisphereSky: "#fff9ef",
@@ -413,7 +415,7 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
   return (
     <section
       ref={sectionRef}
-      className={styles.journeyChapter}
+      className={`${styles.journeyChapter} ${familyInvite ? styles.journeyChapterFamily : ""}`}
       id={northbound ? "journey-pune-delhi" : "journey-delhi-pune"}
       data-invitation-page=""
       aria-label={northbound ? "Journey from Pune to Delhi" : "Journey from Delhi to Pune"}
@@ -437,7 +439,7 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
             oceanColor="#f7f0e5"
             coastlineColor="#654449"
           />
-          <small className={styles.mapAttribution}>Elevation: Mapzen Terrain Tiles · State boundaries: geoBoundaries / DataMeet</small>
+          {!familyInvite && <small className={styles.mapAttribution}>Elevation: Mapzen Terrain Tiles · State boundaries: geoBoundaries / DataMeet</small>}
           <div className={styles.mapEdge} aria-hidden="true" />
         </div>
         <div className={styles.journeyCaption}>
@@ -456,6 +458,10 @@ function EventScene({ event, familyOrder, familyInvite = false, navigationEnable
   const [videoReady, setVideoReady] = useState(false);
   const [visible, setVisible] = useState(false);
   const eventTitle = event.id === "sakharpuda" && familyOrder === "bride" ? "Seemant Poojan" : event.title;
+  const eventVenue = familyOrder === "bride" && event.venue === "The Ocean Pearl Gardenia"
+    ? "The Ocean Pearl Gardenia, Chhatarpur"
+    : event.venue;
+  const showDressCode = event.dressCode.length > 0 && (familyOrder !== "bride" || event.id === "haldi");
 
   useEffect(() => {
     const scene = wrapperRef.current;
@@ -525,7 +531,9 @@ function EventScene({ event, familyOrder, familyInvite = false, navigationEnable
       <span className={styles.artworkLocation}>{event.city}</span>
       <div className={styles.eventFrame}>
         <article className={styles.eventCard}>
-          <span className={styles.cardFlourish} aria-hidden="true">✦</span>
+          {familyInvite
+            ? <img className={styles.eventMonogram} src="/v15-2/ks-monogram-wine-small.png" alt="" aria-hidden="true" />
+            : <span className={styles.cardFlourish} aria-hidden="true">✦</span>}
           <h2 id={`${event.id}-title`}>{eventTitle}</h2>
           <div className={styles.cardDivider} aria-hidden="true" />
           <a className={styles.calendarLink} href={`/api/calendar/${event.id}?side=${familyOrder}${familyInvite ? "&familyInvite=1" : ""}`} aria-label={`Add ${eventTitle} to your calendar`}>
@@ -540,14 +548,14 @@ function EventScene({ event, familyOrder, familyInvite = false, navigationEnable
               href={event.mapUrl}
               target="_blank"
               rel="noreferrer"
-              aria-label={`Open ${event.venue} in maps`}
+              aria-label={`Open ${eventVenue} in maps`}
             >
               <LocationIcon />
-              <span>{event.venue}</span>
+              <span>{eventVenue}</span>
             </a>
           </p>
         </article>
-        {event.dressCode.length > 0 && (
+        {showDressCode && (
           <div className={styles.dressPlate}>
             <span className={styles.dressLabel}>Dress code</span>
             <p className={styles.dressCode}>{event.dressCode.join(" · ")}</p>
@@ -625,7 +633,7 @@ function RSVP({ familyOrder }: { familyOrder: "groom" | "bride" }) {
   );
 }
 
-function BackgroundMusic() {
+function BackgroundMusic({ pauseWhenHidden = false }: { pauseWhenHidden?: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [muted, setMuted] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -634,6 +642,7 @@ function BackgroundMusic() {
     const audio = audioRef.current;
     if (!audio) return;
     audio.volume = 0.28;
+    let resumeWhenVisible = false;
 
     // Try to start on page load. Mobile browsers may require a user gesture,
     // so retry after the guest first taps or presses a key anywhere in the page.
@@ -644,14 +653,32 @@ function BackgroundMusic() {
       if (!audio.paused || audio.muted) return;
       void audio.play().catch(() => undefined);
     };
+    const startFromBeginButton = () => {
+      if (!audio.paused || audio.muted) return;
+      void audio.play().catch(() => undefined);
+    };
+    const handleVisibilityChange = () => {
+      if (!pauseWhenHidden) return;
+      if (document.visibilityState === "hidden") {
+        resumeWhenVisible = !audio.paused && !audio.muted;
+        if (!audio.paused) audio.pause();
+      } else if (resumeWhenVisible && !audio.muted) {
+        resumeWhenVisible = false;
+        void audio.play().catch(() => undefined);
+      }
+    };
     document.addEventListener("pointerdown", resumeAfterGesture, true);
     document.addEventListener("keydown", resumeAfterGesture, true);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener(START_WEDDING_MUSIC_EVENT, startFromBeginButton);
     return () => {
       document.removeEventListener("pointerdown", resumeAfterGesture, true);
       document.removeEventListener("keydown", resumeAfterGesture, true);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener(START_WEDDING_MUSIC_EVENT, startFromBeginButton);
       audio.pause();
     };
-  }, []);
+  }, [pauseWhenHidden]);
 
   function toggleMusic() {
     const audio = audioRef.current;
@@ -752,7 +779,7 @@ export default function Version16Experience({ invitation }: { invitation: Versio
   });
 
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${invitation.familyInvite ? styles.familyInvite : ""}`}>
       <section className={styles.cover} id="top" data-invitation-page="" aria-labelledby="cover-title">
         <img className={styles.coverPoster} src="/v15-2/entry-poster.jpg" alt="A hand-painted palace entrance welcoming guests to Kush and Sanya’s wedding" fetchPriority="high" />
         <div className={styles.coverWash} aria-hidden="true" />
@@ -762,10 +789,18 @@ export default function Version16Experience({ invitation }: { invitation: Versio
           <h1 id="cover-title">{openingNames}</h1>
           <span className={styles.coverDates}>{invitation.familyInvite ? invitationDates : "22–28 November 2026"}</span>
           <div className={styles.coverActions}>
-            <a className={styles.beginButton} href={`#${firstPageId}`}>Begin the journey <span aria-hidden="true">↓</span></a>
+            <a
+              className={styles.beginButton}
+              href={`#${firstPageId}`}
+              onClick={() => document.dispatchEvent(new Event(START_WEDDING_MUSIC_EVENT))}
+            >
+              Begin the journey <span aria-hidden="true">↓</span>
+            </a>
           </div>
         </div>
-        <span className={styles.coverOrnament} aria-hidden="true">✥</span>
+        {invitation.familyInvite
+          ? <img className={styles.coverMonogram} src="/v15-2/ks-monogram-wine-small.png" alt="" aria-hidden="true" />
+          : <span className={styles.coverOrnament} aria-hidden="true">✥</span>}
       </section>
 
       {flow}
@@ -782,18 +817,18 @@ export default function Version16Experience({ invitation }: { invitation: Versio
               loading="lazy"
               decoding="async"
             />
-            {invitation.navigationEnabled && <NextPageButton className={styles.storyArrow} label="Continue to RSVP" />}
+            {invitation.navigationEnabled && invitation.familyOrder !== "bride" && <NextPageButton className={styles.storyArrow} label="Continue to RSVP" />}
           </div>
         </div>
       </section>
-      <RSVP familyOrder={invitation.familyOrder} />
+      {invitation.familyOrder !== "bride" && <RSVP familyOrder={invitation.familyOrder} />}
       <footer className={styles.footer}>
         {invitation.familyInvite
           ? `With love, ${invitation.familyOrder === "bride" ? "Gupta" : "Teppalwar"} family`
           : <>With love, Kush &amp; Sanya</>}
         <span aria-hidden="true">✦</span>
       </footer>
-      {invitation.backgroundMusic && <BackgroundMusic />}
+      {invitation.backgroundMusic && <BackgroundMusic pauseWhenHidden={invitation.familyInvite} />}
     </main>
   );
 }

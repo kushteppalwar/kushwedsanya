@@ -23,6 +23,27 @@
   box-shadow: 0 0 80px rgba(90, 60, 42, .13);
 }
 
+/* Family invite chapters follow the live phone viewport. Content-led pages
+   use min-height so unusually short screens can still scroll without clipping. */
+.familyInvite .cover {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.familyInvite .eventScene {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.familyInvite .storySection,
+.familyInvite .rsvpSection {
+  display: grid;
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  place-items: center;
+}
+
 .cover {
   position: relative;
   display: grid;
@@ -190,12 +211,51 @@
   font-size: 1.2rem;
 }
 
+.coverMonogram {
+  position: absolute;
+  z-index: 2;
+  top: max(28px, env(safe-area-inset-top));
+  left: 50%;
+  display: block;
+  width: 58px;
+  height: 48px;
+  transform: translateX(-50%);
+  border: 1px solid var(--gold-pale);
+  border-radius: 50%;
+  background: rgba(65, 31, 40, .87);
+  box-shadow: 0 2px 10px rgba(18, 9, 9, .28), inset 0 0 0 2px rgba(242, 208, 146, .16);
+  object-fit: cover;
+  object-position: center 53%;
+}
+
 .journeyChapter {
   position: relative;
   padding: 17px 14px 26px;
   background:
     radial-gradient(ellipse at 50% 45%, rgba(255,255,255,.75), transparent 68%),
     linear-gradient(135deg, #eee2cb, #f8f1e6 55%, #eadcc4);
+}
+
+.journeyChapterFamily {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 480px;
+  box-sizing: border-box;
+  flex-direction: column;
+  justify-content: center;
+  padding: max(17px, env(safe-area-inset-top)) 14px max(26px, env(safe-area-inset-bottom));
+  background:
+    linear-gradient(rgba(245, 237, 225, .7), rgba(245, 237, 225, .84)),
+    url("/v15/rsvp-background.png") center / cover,
+    var(--paper-deep);
+}
+
+.journeyChapterFamily .journeyFrame {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
 }
 
 .journeyArrow { margin: -8px auto 0; position: relative; z-index: 2; }
@@ -215,6 +275,12 @@
   height: clamp(295px, 43svh, 410px);
   overflow: hidden;
   background: #f5eddd;
+}
+
+.journeyChapterFamily .mapViewport {
+  min-height: 0;
+  height: auto;
+  flex: 1;
 }
 
 .mapViewport :global(canvas) { position: absolute !important; inset: 0; touch-action: pan-y; }
@@ -374,6 +440,19 @@
    tight, dark, high-contrast shadow (not a soft glow) keeps every line
    legible over both bright sky and dark fabric alike. */
 .cardFlourish { display: block; margin-bottom: 3px; color: var(--gold-pale); font-size: 1.1rem; text-shadow: 0 1px 2px rgba(6, 3, 2, 1); }
+.eventMonogram {
+  display: block;
+  width: 58px;
+  height: 48px;
+  margin: 0 auto 7px;
+  padding: 2px;
+  border: 1px solid rgba(230, 201, 137, .95);
+  border-radius: 50%;
+  background: rgba(65, 31, 40, .87);
+  box-shadow: 0 3px 12px rgba(18, 9, 9, .35), inset 0 0 0 2px rgba(180, 138, 60, .18);
+  object-fit: cover;
+  object-position: center 53%;
+}
 .eventCard h2 {
   margin: 0 0 6px;
   color: #ffedc2;
@@ -611,6 +690,8 @@ button.handoff { cursor: pointer; }
   .cover { min-height: min(900px, 100svh); }
   .eventScene { height: min(760px, 100svh); }
   .journeyChapter { padding: 24px 20px 32px; }
+  .journeyChapterFamily { height: min(760px, 100dvh); }
+  .familyInvite .eventScene { height: min(760px, 100dvh); }
   .rsvpSection { padding: 24px 20px 36px; }
 }
 

@@ -213,7 +213,9 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
   const middle = { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 };
   const arrivalPoint = (place: MapPlace): MapPoint => ({ x: place.lon - to.lon, z: to.lat - place.lat });
   const indiaGuests = guestOrigins.filter((place) => place.lat >= 6 && place.lat <= 38 && place.lon >= 68 && place.lon <= 98);
+  const indiaArcBows = [0.34, -0.42, 0.5, -0.58];
   const worldGuests = guestOrigins.filter((place) => !indiaGuests.includes(place));
+  const worldArcBows = [0.12, -0.2, 0.28, -0.36];
   const routes: ExplorerRoute[] = [
     {
       id: "trip",
@@ -230,8 +232,8 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
             id: `india-${place.city}`,
             from: arrivalPoint(place),
             to: b,
-            bow: index % 2 === 0 ? 0.18 : -0.18,
-            width: 1.5,
+            bow: indiaArcBows[index % indiaArcBows.length],
+            width: 1,
             ghost: 0.1,
             head: "vehicle" as const,
             vehicleKind: "plane" as const,
@@ -244,7 +246,7 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
               id: `world-${place.city}`,
               from: origin,
               to: b,
-              bow: index % 2 === 0 ? 0.1 : -0.1,
+              bow: worldArcBows[index % worldArcBows.length],
               width: 1.4,
               head: "vehicle" as const,
               vehicleKind: "plane" as const,
@@ -262,6 +264,20 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
         ]
       : []),
   ];
+  // The close-up "Together in Delhi" beat keeps the original, tighter route
+  // curves. The wider, separated arcs are only for the Across India overview.
+  const indiaArrivalRoutes: ExplorerRoute[] = indiaGuests.map((place, index) => ({
+    id: `arrival-india-${place.city}`,
+    from: arrivalPoint(place),
+    to: b,
+    bow: index % 2 === 0 ? 0.18 : -0.18,
+    width: 1.5,
+    ghost: 0.1,
+    head: "vehicle",
+    vehicleKind: "plane",
+    trip: 5.5,
+  }));
+  routes.push(...indiaArrivalRoutes);
   const allOrigins = [a, b, ...guestOrigins.map(arrivalPoint)];
   const everyoneLook = {
     x: (Math.min(...allOrigins.map((place) => place.x)) + Math.max(...allOrigins.map((place) => place.x))) / 2,
@@ -277,7 +293,7 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
     z: (Math.min(...indiaOrigins.map((place) => place.z)) + Math.max(...indiaOrigins.map((place) => place.z))) / 2,
   };
   const indiaRoutes = ["trip", "india-*"];
-  const arrivalRoutes = ["trip", "india-*", "world-*"];
+  const worldRoutes = ["world-*"];
   const stages: ExplorerStage[] = northbound
     ? [
         {
@@ -298,15 +314,15 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
           short: "Across India",
           camera: { look: indiaLook, fit: 42, portraitFit: 50, pitch: 50 },
           drawn: indiaRoutes,
-          looping: indiaRoutes,
+          looping: familyInvite ? ["india-*"] : indiaRoutes,
           flight: 2.2,
         },
         {
           key: "world",
           short: "From around the world",
           camera: { look: everyoneLook, fit: 245, portraitFit: 350, pitch: 50 },
-          drawn: arrivalRoutes,
-          looping: arrivalRoutes,
+          drawn: worldRoutes,
+          looping: worldRoutes,
           flight: 2.2,
         },
         {
@@ -315,8 +331,8 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
           camera: { look: b, fit: 20, portraitFit: 23, pitch: 48 },
           // Keep the India routes in view for the Delhi arrival; the overseas
           // routes were shown on the world stage just before this close-up.
-          drawn: ["trip", "india-*"],
-          looping: indiaRoutes,
+          drawn: ["trip", "arrival-india-*"],
+          looping: ["trip", "arrival-india-*"],
           flight: 2.2,
         },
       ]
@@ -380,16 +396,17 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
     const resetToStart = () => setStageIndex(0);
     resetToStart();
     const start = window.setTimeout(() => setStageIndex(1), 400);
-    const next = window.setTimeout(() => setStageIndex(2), 3200);
-    const world = northbound ? window.setTimeout(() => setStageIndex(3), 8200) : undefined;
-    const settle = northbound ? window.setTimeout(() => setStageIndex(4), 13200) : undefined;
+    const familyNorthbound = familyInvite && northbound;
+    const next = window.setTimeout(() => setStageIndex(2), familyNorthbound ? 7000 : 3200);
+    const world = northbound ? window.setTimeout(() => setStageIndex(3), familyNorthbound ? 17000 : 8200) : undefined;
+    const settle = northbound ? window.setTimeout(() => setStageIndex(4), familyNorthbound ? 27000 : 13200) : undefined;
     return () => {
       window.clearTimeout(start);
       window.clearTimeout(next);
       if (world) window.clearTimeout(world);
       if (settle) window.clearTimeout(settle);
     };
-  }, [active, northbound, stages.length]);
+  }, [active, familyInvite, northbound, stages.length]);
 
   const fallback = <MapFallback />;
   const chapterText = !northbound

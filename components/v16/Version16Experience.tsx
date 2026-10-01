@@ -339,7 +339,7 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
           short: "Back in Pune",
           camera: { look: b, fit: 20, portraitFit: 23, pitch: 48 },
           drawn: ["trip"],
-          parked: ["trip"],
+          ...(familyInvite ? { looping: ["trip"] } : { parked: ["trip"] }),
           flight: 2.2,
         },
       ];

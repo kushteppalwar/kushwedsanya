@@ -75,6 +75,8 @@ export interface ExplorerStage {
   intro?: boolean;
   /** Whether the city and place labels show (default true); the intro keeps the map bare behind the names. */
   labels?: boolean;
+  /** City pins to hide for this stage. */
+  hiddenPins?: string[];
 }
 
 /** Does a route id match one of the stage's patterns? */

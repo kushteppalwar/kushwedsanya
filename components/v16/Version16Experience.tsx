@@ -237,7 +237,7 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
             ghost: 0.1,
             head: "vehicle" as const,
             vehicleKind: "plane" as const,
-            trip: 5.5,
+            trip: familyInvite ? 4.2 : 5.5,
           })),
           ...worldGuests.map((place, index) => {
             const origin = arrivalPoint(place);
@@ -250,7 +250,7 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
               width: 1.4,
               head: "vehicle" as const,
               vehicleKind: "plane" as const,
-              trip: 7,
+              trip: familyInvite ? 5.2 : 7,
               approach: true,
               // Fly in across most of the real distance rather than a fixed
               // hop, so a guest from Switzerland travels visibly less far
@@ -313,9 +313,10 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
           key: "india",
           short: "Across India",
           camera: { look: indiaLook, fit: 42, portraitFit: 50, pitch: 50 },
-          drawn: indiaRoutes,
+          drawn: familyInvite ? ["india-*"] : indiaRoutes,
           looping: familyInvite ? ["india-*"] : indiaRoutes,
-          flight: 2.2,
+          ...(familyInvite ? { hiddenPins: ["Pune"] } : {}),
+          flight: familyInvite ? 1.6 : 2.2,
         },
         {
           key: "world",
@@ -323,7 +324,7 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
           camera: { look: everyoneLook, fit: 245, portraitFit: 350, pitch: 50 },
           drawn: worldRoutes,
           looping: worldRoutes,
-          flight: 2.2,
+          flight: familyInvite ? 1.6 : 2.2,
         },
         {
           key: "arrival",
@@ -397,9 +398,9 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
     resetToStart();
     const start = window.setTimeout(() => setStageIndex(1), 400);
     const familyNorthbound = familyInvite && northbound;
-    const next = window.setTimeout(() => setStageIndex(2), familyNorthbound ? 7000 : 3200);
-    const world = northbound ? window.setTimeout(() => setStageIndex(3), familyNorthbound ? 17000 : 8200) : undefined;
-    const settle = northbound ? window.setTimeout(() => setStageIndex(4), familyNorthbound ? 27000 : 13200) : undefined;
+    const next = window.setTimeout(() => setStageIndex(2), familyNorthbound ? 5500 : 3200);
+    const world = northbound ? window.setTimeout(() => setStageIndex(3), familyNorthbound ? 12000 : 8200) : undefined;
+    const settle = northbound ? window.setTimeout(() => setStageIndex(4), familyNorthbound ? 19500 : 13200) : undefined;
     return () => {
       window.clearTimeout(start);
       window.clearTimeout(next);
@@ -475,6 +476,7 @@ function EventScene({ event, familyOrder, familyInvite = false, navigationEnable
   const [videoReady, setVideoReady] = useState(false);
   const [visible, setVisible] = useState(false);
   const eventTitle = event.id === "sakharpuda" && familyOrder === "bride" ? "Seemant Poojan" : event.title;
+  const eventHall = familyInvite && event.id === "shadi" ? "Lawn in front of Pacific 1" : event.hall;
   const eventVenue = familyOrder === "bride" && event.venue === "The Ocean Pearl Gardenia"
     ? "The Ocean Pearl Gardenia, Chhatarpur"
     : event.venue;
@@ -559,7 +561,7 @@ function EventScene({ event, familyOrder, familyInvite = false, navigationEnable
           </a>
           {event.lunch && <p className={styles.mealLine}>{event.lunch}</p>}
           <p className={styles.eventRoom}>
-            {event.hall && <span>{event.hallType} · {event.hall}<br /></span>}
+            {eventHall && <span>{familyInvite && event.id === "shadi" ? eventHall : `${event.hallType} · ${eventHall}`}<br /></span>}
             <a
               className={styles.mapLink}
               href={event.mapUrl}

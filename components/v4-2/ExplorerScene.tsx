@@ -236,6 +236,7 @@ function Explorer({
   oceanColor = OCEAN_COLOR,
   coastlineColor = COASTLINE_COLOR,
 }: Omit<ExplorerSceneProps, "active" | "fallback">) {
+  const currentStage = stages[stageIndex];
   const view = useRef(createViewState());
   const { size } = useThree();
   // Rendered client-only (dynamic import with ssr: false), so window is available at first render.
@@ -262,8 +263,14 @@ function Explorer({
     const routeKind = routes[index].vehicleKind ?? kind;
     return routeKind === "plane" || !ground ? air : ground;
   };
-  const routeStates = useMemo(() => routes.map(() => createRouteState()), [routes]);
-  const travellerStates = useMemo(() => routes.map(() => createTravellerState()), [routes]);
+  // Route definitions are rebuilt by the parent when a stage changes. Keep
+  // animation state tied to the route geometry instead of the array identity,
+  // so a camera handoff does not restart an in-progress route draw.
+  const routeSetKey = routes
+    .map((route) => `${route.id}:${route.from.x},${route.from.z}:${route.to.x},${route.to.z}:${route.head}`)
+    .join("|");
+  const routeStates = useMemo(() => routes.map(() => createRouteState()), [routeSetKey]);
+  const travellerStates = useMemo(() => routes.map(() => createTravellerState()), [routeSetKey]);
   const runs = useRef<RouteRun[]>(
     routes.map((_, index) => ({
       revealTarget: 0,
@@ -505,7 +512,7 @@ function Explorer({
         </group>
       ))}
 
-      {pins.map((pin) => (
+      {pins.filter((pin) => !currentStage.hiddenPins?.includes(pin.stop.city)).map((pin) => (
         <PinMarker key={pin.stop.city} {...pin} view={view} palette={palette} />
       ))}
       {places.map((place) => (

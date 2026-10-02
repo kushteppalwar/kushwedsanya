@@ -476,7 +476,7 @@ function EventScene({ event, familyOrder, familyInvite = false, navigationEnable
   const [videoReady, setVideoReady] = useState(false);
   const [visible, setVisible] = useState(false);
   const eventTitle = event.id === "sakharpuda" && familyOrder === "bride" ? "Seemant Poojan" : event.title;
-  const eventHall = familyInvite && event.id === "shadi" ? "Lawn in front of Pacific 1" : event.hall;
+  const eventHall = familyInvite && event.id === "shadi" ? "Lawn Pacific 1" : event.hall;
   const eventVenue = familyOrder === "bride" && event.venue === "The Ocean Pearl Gardenia"
     ? "The Ocean Pearl Gardenia, Chhatarpur"
     : event.venue;

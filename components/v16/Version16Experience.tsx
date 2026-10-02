@@ -292,6 +292,11 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
     x: (Math.min(...indiaOrigins.map((place) => place.x)) + Math.max(...indiaOrigins.map((place) => place.x))) / 2,
     z: (Math.min(...indiaOrigins.map((place) => place.z)) + Math.max(...indiaOrigins.map((place) => place.z))) / 2,
   };
+  const familyIndiaOrigins = [b, ...indiaGuests.map(arrivalPoint)];
+  const familyIndiaLook = {
+    x: (Math.min(...familyIndiaOrigins.map((place) => place.x)) + Math.max(...familyIndiaOrigins.map((place) => place.x))) / 2,
+    z: (Math.min(...familyIndiaOrigins.map((place) => place.z)) + Math.max(...familyIndiaOrigins.map((place) => place.z))) / 2,
+  };
   const indiaRoutes = ["trip", "india-*"];
   const worldRoutes = ["world-*"];
   const stages: ExplorerStage[] = northbound
@@ -312,7 +317,7 @@ function MapJourney({ direction, familyInvite = false, navigationEnabled = false
         {
           key: "india",
           short: "Across India",
-          camera: { look: indiaLook, fit: 42, portraitFit: 50, pitch: 50 },
+          camera: { look: indiaLook, portraitLook: familyInvite ? familyIndiaLook : undefined, fit: 42, portraitFit: 50, pitch: 50 },
           drawn: familyInvite ? ["india-*"] : indiaRoutes,
           looping: familyInvite ? ["india-*"] : indiaRoutes,
           ...(familyInvite ? { hiddenPins: ["Pune"] } : {}),

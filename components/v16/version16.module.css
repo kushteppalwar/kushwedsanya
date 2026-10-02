@@ -235,8 +235,8 @@
 
 .journeyChapterFamily {
   display: flex;
-  height: min(860px, 100svh);
-  min-height: 480px;
+  min-height: max(480px, min(860px, 100svh));
+  height: auto;
   box-sizing: border-box;
   flex-direction: column;
   justify-content: center;
@@ -250,7 +250,7 @@
 .journeyChapterFamily .journeyFrame {
   display: flex;
   min-height: 0;
-  flex: 1;
+  flex: 0 0 auto;
   flex-direction: column;
 }
 
@@ -275,8 +275,8 @@
 
 .journeyChapterFamily .mapViewport {
   min-height: 0;
-  height: auto;
-  flex: 1;
+  height: min(55svh, 480px);
+  flex: 0 0 min(55svh, 480px);
 }
 
 .mapViewport :global(canvas) { position: absolute !important; inset: 0; touch-action: pan-y; }
@@ -686,7 +686,7 @@ button.handoff { cursor: pointer; }
   .cover { min-height: min(900px, 100svh); }
   .eventScene { height: min(760px, 100svh); }
   .journeyChapter { padding: 24px 20px 32px; }
-  .journeyChapterFamily { height: min(760px, 100svh); }
+  .journeyChapterFamily { min-height: max(480px, min(760px, 100svh)); }
   .familyInvite .eventScene { height: min(760px, 100svh); }
   .rsvpSection { padding: 24px 20px 36px; }
 }

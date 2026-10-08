@@ -664,12 +664,7 @@ function RSVP({ familyOrder, eventIds, inviteCode }: { familyOrder: "groom" | "b
     const form = event.currentTarget;
     const values = new FormData(form);
     const idCards = values.getAll("idCards").filter((value): value is File => value instanceof File && value.size > 0);
-    if (hasDelhiInvite && delhiAttending === "yes" && idCards.length < Number(values.get("delhiPartySize"))) {
-      setStatus("error");
-      setErrorMessage("Please upload at least one ID card for each Delhi guest attending. You can include additional IDs too.");
-      return;
-    }
-    const needsIdUploads = familyOrder === "groom" && hasDelhiInvite && delhiAttending === "yes";
+    const needsIdUploads = familyOrder === "groom" && hasDelhiInvite && delhiAttending === "yes" && idCards.length > 0;
     if (needsIdUploads && idCards.some((file) => file.size > 3 * 1024 * 1024)) {
       setStatus("error");
       setErrorMessage("Each ID file must be 3 MB or smaller. There is no limit on the number of files.");
@@ -698,7 +693,7 @@ function RSVP({ familyOrder, eventIds, inviteCode }: { familyOrder: "groom" | "b
         phone: values.get("phone"),
         familyOrder,
         inviteCode: inviteCode ?? "mp-sk-sg-hw-we-re",
-        delhiAttending: needsIdUploads ? "yes" : delhiAttending,
+        delhiAttending,
         delhiPartySize: values.get("delhiPartySize"),
         receptionAttending,
         receptionPartySize: values.get("receptionPartySize"),
@@ -745,11 +740,11 @@ function RSVP({ familyOrder, eventIds, inviteCode }: { familyOrder: "groom" | "b
             <label><span>Phone number</span><input name="phone" type="tel" inputMode="tel" autoComplete="tel" required maxLength={32} placeholder="Your phone number" /></label>
             {hasDelhiInvite && (
               <>
-                <label><span>Will your party join us for the Delhi celebrations?</span><select name="delhiAttending" required value={delhiAttending} onChange={(event) => setDelhiAttending(event.target.value)}><option value="">Select one</option><option value="yes">Joyfully accepts</option><option value="no">Regretfully declines</option></select></label>
+                <label><span>Will your party join us for the Delhi celebrations? <em>(optional)</em></span><select name="delhiAttending" value={delhiAttending} onChange={(event) => setDelhiAttending(event.target.value)}><option value="">Select one</option><option value="yes">Joyfully accepts</option><option value="no">Regretfully declines</option></select></label>
                 {delhiAttending === "yes" && <label><span>Delhi guests attending, including you</span><input name="delhiPartySize" type="number" min="1" max="20" required placeholder="Number of guests" /></label>}
                 {delhiAttending === "yes" && <>
-                  <label><span>ID cards for Delhi guests</span><input name="idCards" type="file" accept="image/jpeg,image/png,application/pdf" multiple required aria-describedby="id-upload-help" /></label>
-                  <span className={styles.privacyNote} id="id-upload-help">Upload at least one JPG, PNG, or PDF ID per Delhi guest, including you. Add as many files as you need; each file can be up to 3 MB. IDs are stored privately for Delhi event entry checks.</span>
+                  <label><span>ID cards for Delhi guests <em>(optional)</em></span><input name="idCards" type="file" accept="image/jpeg,image/png,application/pdf" multiple aria-describedby="id-upload-help" /></label>
+                  <span className={styles.privacyNote} id="id-upload-help">You can send your RSVP without documents. If you choose to upload IDs, use JPG, PNG, or PDF files up to 3 MB each. Files are stored privately for Delhi event entry checks.</span>
                   {uploadProgress && <div className={styles.uploadProgress} role="status" aria-live="polite">
                     <span>{uploadProgress.fileName === "Saving your RSVP" ? "Saving your RSVP…" : `Uploading ID ${uploadProgress.index} of ${uploadProgress.total}: ${uploadProgress.fileName}`}</span>
                     <progress max="100" value={uploadProgress.percent} aria-label={uploadProgress.fileName === "Saving your RSVP" ? "Saving your RSVP" : `Uploading ${uploadProgress.fileName}`} />
@@ -760,7 +755,7 @@ function RSVP({ familyOrder, eventIds, inviteCode }: { familyOrder: "groom" | "b
             )}
             {hasReceptionInvite && (
               <>
-                <label><span>Will your party join us for the Reception in Pune?</span><select name="receptionAttending" required value={receptionAttending} onChange={(event) => setReceptionAttending(event.target.value)}><option value="">Select one</option><option value="yes">Joyfully accepts</option><option value="no">Regretfully declines</option></select></label>
+                <label><span>Will your party join us for the Reception in Pune? <em>(optional)</em></span><select name="receptionAttending" value={receptionAttending} onChange={(event) => setReceptionAttending(event.target.value)}><option value="">Select one</option><option value="yes">Joyfully accepts</option><option value="no">Regretfully declines</option></select></label>
                 {receptionAttending === "yes" && <label><span>Pune Reception guests attending, including you</span><input name="receptionPartySize" type="number" min="1" max="20" required placeholder="Number of guests" /></label>}
               </>
             )}

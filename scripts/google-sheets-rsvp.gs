@@ -99,11 +99,12 @@ function verifyIdCardBatch(payload) {
     if (payload.idUploadBatchId || Number(payload.idCardsReceived)) throw new Error("Unexpected ID upload batch.");
     return 0;
   }
-  if (!isUuid(payload.idUploadBatchId)) throw new Error("Missing ID upload batch.");
+  if (!payload.idUploadBatchId && !Number(payload.idCardsReceived)) return 0;
+  if (!isUuid(payload.idUploadBatchId)) throw new Error("Invalid ID upload batch.");
   const batchFolder = findBatchFolder(payload.idUploadBatchId);
   const count = batchFolder ? countBatchFiles(batchFolder.id) : 0;
-  if (count < Number(payload.delhiPartySize) || count !== Number(payload.idCardsReceived)) {
-    throw new Error("Please upload an ID for each Delhi guest before submitting.");
+  if (count !== Number(payload.idCardsReceived)) {
+    throw new Error("The uploaded ID count does not match this RSVP.");
   }
   return count;
 }

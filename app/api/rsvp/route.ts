@@ -62,11 +62,11 @@ export async function POST(request: Request) {
 
   const validCityResponse = (invited: boolean, answer: string, count: number) =>
     invited
-      ? Boolean(answer) && (answer === "No" || (Number.isInteger(count) && count >= 1 && count <= 20))
+      ? (answer === "" && count === 0) || answer === "No" || (answer === "Yes" && Number.isInteger(count) && count >= 1 && count <= 20)
       : !answer;
   const needsDelhiIds = familySide === "Groom" && hasDelhiInvite && delhiAttending === "Yes";
   const validIdUploads = needsDelhiIds
-    ? /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idUploadBatchId) && Number.isInteger(idCardsReceived) && idCardsReceived >= delhiPartySize
+    ? (!idUploadBatchId && idCardsReceived === 0) || (/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idUploadBatchId) && Number.isInteger(idCardsReceived) && idCardsReceived >= 0)
     : !idUploadBatchId && idCardsReceived === 0;
 
   if (

@@ -56,6 +56,7 @@ function doPost(event) {
     updateHeadcountSummary(spreadsheet);
     return jsonResponse({ ok: true });
   } catch (error) {
+    Logger.log(error && error.stack ? error.stack : String(error));
     return jsonResponse({ ok: false, error: "Unable to process RSVP" });
   }
 }
@@ -122,7 +123,7 @@ function getOrCreateBatchFolder(payload) {
     name: `${inviteCode} - ${guestName} - ${payload.batchId}`,
     mimeType: "application/vnd.google-apps.folder",
     parents: [rootId],
-  }, { fields: "id,name" });
+  }, null, { fields: "id,name" });
 }
 
 function findBatchFolder(batchId) {
@@ -165,7 +166,7 @@ function ensureIdFolder() {
   const folder = Drive.Files.create({
     name: "Kush & Sanya - Private Delhi ID uploads",
     mimeType: "application/vnd.google-apps.folder",
-  }, { fields: "id" });
+  }, null, { fields: "id" });
   properties.setProperty("RSVP_ID_UPLOAD_FOLDER_ID", folder.id);
   return folder.id;
 }

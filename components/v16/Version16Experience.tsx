@@ -612,6 +612,7 @@ function RSVP({ familyOrder, eventIds, inviteCode }: { familyOrder: "groom" | "b
   const [uploadProgress, setUploadProgress] = useState<{ index: number; total: number; percent: number; fileName: string } | null>(null);
   const [showSavedDialog, setShowSavedDialog] = useState(false);
   const uploadBatchId = useRef<string | null>(null);
+  const uploadIds = useRef(new Map<string, string>());
   const uploadedFiles = useRef(new Map<string, string>());
   const uploadedCount = useRef(0);
   const hasDelhiInvite = eventIds.some((eventId) => ["sakharpuda", "sangeet", "haldi", "shadi"].includes(eventId));
@@ -684,7 +685,8 @@ function RSVP({ familyOrder, eventIds, inviteCode }: { familyOrder: "groom" | "b
         for (let index = 0; index < filesToUpload.length; index += 1) {
           const file = filesToUpload[index];
           const key = `${file.name}:${file.size}:${file.lastModified}`;
-          const uploadId = newUuid();
+          const uploadId = uploadIds.current.get(key) ?? newUuid();
+          uploadIds.current.set(key, uploadId);
           uploadedCount.current = await uploadIdFile(file, batchId, uploadId, values, index + 1, filesToUpload.length);
           uploadedFiles.current.set(key, uploadId);
         }
@@ -722,6 +724,7 @@ function RSVP({ familyOrder, eventIds, inviteCode }: { familyOrder: "groom" | "b
       setDelhiAttending("");
       setReceptionAttending("");
       uploadBatchId.current = null;
+      uploadIds.current.clear();
       uploadedFiles.current.clear();
       uploadedCount.current = 0;
     } catch (error) {

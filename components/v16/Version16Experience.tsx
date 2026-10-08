@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import type { ExplorerRoute, ExplorerStage } from "@/components/v4-2/stages";
 import type { Atlas3DPin, Atlas3DPlace, MapPoint } from "@/components/v4-1/atlas";
 import type { MapPalette } from "@/components/v4-1/mapScene";
@@ -615,6 +615,7 @@ function RSVP({ familyOrder, eventIds, inviteCode, optionalResponses = false }: 
   const uploadIds = useRef(new Map<string, string>());
   const uploadedFiles = useRef(new Map<string, string>());
   const uploadedCount = useRef(0);
+  const uploadPromise = useRef<Promise<void> | null>(null);
   const hasDelhiInvite = eventIds.some((eventId) => ["sakharpuda", "sangeet", "haldi", "shadi"].includes(eventId));
   const hasReceptionInvite = eventIds.includes("reception");
 
@@ -658,6 +659,50 @@ function RSVP({ familyOrder, eventIds, inviteCode, optionalResponses = false }: 
     });
   }
 
+  function startSelectedUploads(files: File[], values: FormData) {
+    if (uploadPromise.current) return uploadPromise.current;
+    const filesToUpload = files.filter((file) => !uploadedFiles.current.has(`${file.name}:${file.size}:${file.lastModified}`));
+    if (filesToUpload.length === 0) return Promise.resolve();
+    const oversizedFile = filesToUpload.find((file) => file.size > 3 * 1024 * 1024);
+    if (oversizedFile) return Promise.reject(new Error(`${oversizedFile.name} is larger than 3 MB. Choose a smaller file.`));
+    if (!String(values.get("fullName") ?? "").trim()) return Promise.reject(new Error("Enter your name before choosing ID files."));
+
+    const batchId = uploadBatchId.current ?? newUuid();
+    uploadBatchId.current = batchId;
+    if (uploadedFiles.current.size === 0) uploadedCount.current = 0;
+    const task = (async () => {
+      for (let index = 0; index < filesToUpload.length; index += 1) {
+        const file = filesToUpload[index];
+        const key = `${file.name}:${file.size}:${file.lastModified}`;
+        const uploadId = uploadIds.current.get(key) ?? newUuid();
+        uploadIds.current.set(key, uploadId);
+        uploadedCount.current = await uploadIdFile(file, batchId, uploadId, values, index + 1, filesToUpload.length);
+        uploadedFiles.current.set(key, uploadId);
+      }
+      setUploadProgress({ index: files.length, total: files.length, percent: 100, fileName: "Uploads complete" });
+    })();
+    uploadPromise.current = task;
+    void task.finally(() => {
+      if (uploadPromise.current === task) uploadPromise.current = null;
+    }).catch(() => { /* the caller handles upload errors */ });
+    return task;
+  }
+
+  function handleIdFileSelection(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.currentTarget.files ?? []);
+    if (files.length === 0) {
+      setUploadProgress(null);
+      return;
+    }
+    setErrorMessage("");
+    const values = new FormData(event.currentTarget.form ?? undefined);
+    void startSelectedUploads(files, values).catch((error) => {
+      setUploadProgress(null);
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "We couldn’t upload those files. Please try again.");
+    });
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("sending");
@@ -669,8 +714,8 @@ function RSVP({ familyOrder, eventIds, inviteCode, optionalResponses = false }: 
       setErrorMessage("Please upload at least one ID card for each Delhi guest attending. You can include additional IDs too.");
       return;
     }
-    const needsIdUploads = familyOrder === "groom" && hasDelhiInvite && delhiAttending === "yes" && idCards.length > 0;
-    if (needsIdUploads && idCards.some((file) => file.size > 3 * 1024 * 1024)) {
+    const needsIdUploads = familyOrder === "groom" && hasDelhiInvite && delhiAttending === "yes" && (idCards.length > 0 || uploadedFiles.current.size > 0);
+    if (idCards.some((file) => file.size > 3 * 1024 * 1024)) {
       setStatus("error");
       setErrorMessage("Each ID file must be 3 MB or smaller. There is no limit on the number of files.");
       return;
@@ -680,17 +725,8 @@ function RSVP({ familyOrder, eventIds, inviteCode, optionalResponses = false }: 
       if (needsIdUploads) {
         batchId = uploadBatchId.current ?? newUuid();
         uploadBatchId.current = batchId;
-        if (uploadedFiles.current.size === 0) uploadedCount.current = 0;
-        const filesToUpload = idCards.filter((file) => !uploadedFiles.current.has(`${file.name}:${file.size}:${file.lastModified}`));
-        for (let index = 0; index < filesToUpload.length; index += 1) {
-          const file = filesToUpload[index];
-          const key = `${file.name}:${file.size}:${file.lastModified}`;
-          const uploadId = uploadIds.current.get(key) ?? newUuid();
-          uploadIds.current.set(key, uploadId);
-          uploadedCount.current = await uploadIdFile(file, batchId, uploadId, values, index + 1, filesToUpload.length);
-          uploadedFiles.current.set(key, uploadId);
-        }
-        setUploadProgress({ index: idCards.length, total: idCards.length, percent: 100, fileName: "Saving your RSVP" });
+        await startSelectedUploads(idCards, values);
+        if (uploadedCount.current > 0) setUploadProgress({ index: uploadedFiles.current.size, total: uploadedFiles.current.size, percent: 100, fileName: "Saving your RSVP" });
       }
 
       const payload = {
@@ -727,6 +763,7 @@ function RSVP({ familyOrder, eventIds, inviteCode, optionalResponses = false }: 
       uploadIds.current.clear();
       uploadedFiles.current.clear();
       uploadedCount.current = 0;
+      uploadPromise.current = null;
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "We couldn’t save your RSVP just yet. Please try again shortly.");
@@ -748,12 +785,12 @@ function RSVP({ familyOrder, eventIds, inviteCode, optionalResponses = false }: 
                 <label><span>Will your party join us for the Delhi celebrations? {optionalResponses && <em>(optional)</em>}</span><select name="delhiAttending" required={!optionalResponses} value={delhiAttending} onChange={(event) => setDelhiAttending(event.target.value)}><option value="">Select one</option><option value="yes">Joyfully accepts</option><option value="no">Regretfully declines</option></select></label>
                 {delhiAttending === "yes" && <label><span>Delhi guests attending, including you</span><input name="delhiPartySize" type="number" min="1" max="20" required placeholder="Number of guests" /></label>}
                 {delhiAttending === "yes" && <>
-                  <label><span>ID cards for Delhi guests {optionalResponses && <em>(optional)</em>}</span><input name="idCards" type="file" accept="image/jpeg,image/png,application/pdf" multiple required={!optionalResponses} aria-describedby="id-upload-help" /></label>
+                  <label><span>ID cards for Delhi guests {optionalResponses && <em>(optional)</em>}</span><input name="idCards" type="file" accept="image/jpeg,image/png,application/pdf" multiple required={!optionalResponses} aria-describedby="id-upload-help" onChange={optionalResponses ? handleIdFileSelection : undefined} disabled={status === "sending" || uploadPromise.current !== null} /></label>
                   <span className={styles.privacyNote} id="id-upload-help">{optionalResponses ? "You can send your RSVP without documents. If you choose to upload IDs, use JPG, PNG, or PDF files up to 3 MB each. Files are stored privately for Delhi event entry checks." : "Upload at least one JPG, PNG, or PDF ID per Delhi guest, including you. Add as many files as you need; each file can be up to 3 MB. IDs are stored privately for Delhi event entry checks."}</span>
                   {uploadProgress && <div className={styles.uploadProgress} role="status" aria-live="polite">
-                    <span>{uploadProgress.fileName === "Saving your RSVP" ? "Saving your RSVP…" : `Uploading ID ${uploadProgress.index} of ${uploadProgress.total}: ${uploadProgress.fileName}`}</span>
-                    <progress max="100" value={uploadProgress.percent} aria-label={uploadProgress.fileName === "Saving your RSVP" ? "Saving your RSVP" : `Uploading ${uploadProgress.fileName}`} />
-                    {uploadProgress.fileName !== "Saving your RSVP" && <span>{uploadProgress.percent}%</span>}
+                    <span>{uploadProgress.fileName === "Saving your RSVP" ? "Saving your RSVP…" : uploadProgress.fileName === "Uploads complete" ? `${uploadProgress.total} ID ${uploadProgress.total === 1 ? "file" : "files"} uploaded` : `Uploading ID ${uploadProgress.index} of ${uploadProgress.total}: ${uploadProgress.fileName}`}</span>
+                    <progress max="100" value={uploadProgress.percent} aria-label={uploadProgress.fileName === "Saving your RSVP" ? "Saving your RSVP" : uploadProgress.fileName === "Uploads complete" ? "ID uploads complete" : `Uploading ${uploadProgress.fileName}`} />
+                    {uploadProgress.fileName !== "Saving your RSVP" && uploadProgress.fileName !== "Uploads complete" && <span>{uploadProgress.percent}%</span>}
                   </div>}
                 </>}
               </>

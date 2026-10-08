@@ -14,6 +14,7 @@ type EventId = "mandap-puja" | "sakharpuda" | "sangeet" | "haldi" | "shadi" | "r
 export type Version16Invitation = {
   familyOrder: "groom" | "bride";
   eventIds: EventId[];
+  inviteCode?: string;
   familyInvite?: boolean;
   navigationEnabled?: boolean;
   backgroundMusic?: boolean;
@@ -603,31 +604,129 @@ function LocationIcon() {
   );
 }
 
-function RSVP({ familyOrder }: { familyOrder: "groom" | "bride" }) {
+function RSVP({ familyOrder, eventIds, inviteCode }: { familyOrder: "groom" | "bride"; eventIds: EventId[]; inviteCode?: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [delhiAttending, setDelhiAttending] = useState("");
+  const [receptionAttending, setReceptionAttending] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<{ index: number; total: number; percent: number; fileName: string } | null>(null);
+  const [showSavedDialog, setShowSavedDialog] = useState(false);
+  const uploadBatchId = useRef<string | null>(null);
+  const uploadedFiles = useRef(new Map<string, string>());
+  const uploadedCount = useRef(0);
+  const hasDelhiInvite = eventIds.some((eventId) => ["sakharpuda", "sangeet", "haldi", "shadi"].includes(eventId));
+  const hasReceptionInvite = eventIds.includes("reception");
+
+  function newUuid() {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+      const random = Math.random() * 16 | 0;
+      return (character === "x" ? random : (random & 3) | 8).toString(16);
+    });
+  }
+
+  function uploadIdFile(file: File, batchId: string, uploadId: string, values: FormData, index: number, total: number) {
+    return new Promise<number>((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      const body = new FormData();
+      body.append("idCard", file);
+      body.append("familyOrder", familyOrder);
+      body.append("delhiAttending", "yes");
+      body.append("inviteCode", inviteCode ?? "mp-sk-sg-hw-we-re");
+      body.append("batchId", batchId);
+      body.append("uploadId", uploadId);
+      body.append("fullName", String(values.get("fullName") ?? ""));
+      request.open("POST", "/api/rsvp/id-upload");
+      request.upload.onprogress = (progress) => {
+        if (progress.lengthComputable) {
+          setUploadProgress({ index, total, percent: Math.round((progress.loaded / progress.total) * 100), fileName: file.name });
+        }
+      };
+      request.onerror = () => reject(new Error(`Could not upload ${file.name}. Please retry.`));
+      request.onload = () => {
+        let result: { error?: unknown; idCardsReceived?: unknown } = {};
+        try { result = JSON.parse(request.responseText) as { error?: unknown; idCardsReceived?: unknown }; } catch { /* handled as a generic upload error */ }
+        if (request.status < 200 || request.status >= 300) {
+          reject(new Error(typeof result.error === "string" ? result.error : `Could not upload ${file.name}. Please retry.`));
+          return;
+        }
+        resolve(typeof result.idCardsReceived === "number" ? result.idCardsReceived : 0);
+      };
+      setUploadProgress({ index, total, percent: 0, fileName: file.name });
+      request.send(body);
+    });
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("sending");
     const form = event.currentTarget;
     const values = new FormData(form);
+    const idCards = values.getAll("idCards").filter((value): value is File => value instanceof File && value.size > 0);
+    if (hasDelhiInvite && delhiAttending === "yes" && idCards.length < Number(values.get("delhiPartySize"))) {
+      setStatus("error");
+      setErrorMessage("Please upload at least one ID card for each Delhi guest attending. You can include additional IDs too.");
+      return;
+    }
+    const needsIdUploads = familyOrder === "groom" && hasDelhiInvite && delhiAttending === "yes";
+    if (needsIdUploads && idCards.some((file) => file.size > 3 * 1024 * 1024)) {
+      setStatus("error");
+      setErrorMessage("Each ID file must be 3 MB or smaller. There is no limit on the number of files.");
+      return;
+    }
     try {
+      let batchId = "";
+      if (needsIdUploads) {
+        batchId = uploadBatchId.current ?? newUuid();
+        uploadBatchId.current = batchId;
+        if (uploadedFiles.current.size === 0) uploadedCount.current = 0;
+        const filesToUpload = idCards.filter((file) => !uploadedFiles.current.has(`${file.name}:${file.size}:${file.lastModified}`));
+        for (let index = 0; index < filesToUpload.length; index += 1) {
+          const file = filesToUpload[index];
+          const key = `${file.name}:${file.size}:${file.lastModified}`;
+          const uploadId = newUuid();
+          uploadedCount.current = await uploadIdFile(file, batchId, uploadId, values, index + 1, filesToUpload.length);
+          uploadedFiles.current.set(key, uploadId);
+        }
+        setUploadProgress({ index: idCards.length, total: idCards.length, percent: 100, fileName: "Saving your RSVP" });
+      }
+
+      const payload = {
+        fullName: values.get("fullName"),
+        phone: values.get("phone"),
+        familyOrder,
+        inviteCode: inviteCode ?? "mp-sk-sg-hw-we-re",
+        delhiAttending: needsIdUploads ? "yes" : delhiAttending,
+        delhiPartySize: values.get("delhiPartySize"),
+        receptionAttending,
+        receptionPartySize: values.get("receptionPartySize"),
+        idUploadBatchId: needsIdUploads ? batchId : "",
+        idCardsReceived: needsIdUploads ? uploadedCount.current : 0,
+        wishes: values.get("wishes"),
+        website: values.get("website"),
+      };
       const response = await fetch("/api/rsvp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName: values.get("fullName"),
-          phone: values.get("phone"),
-          attending: values.get("attending"),
-          partySize: values.get("partySize"),
-          wishes: values.get("wishes"),
-          website: values.get("website"),
-        }),
+        body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error("RSVP could not be saved");
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(typeof result?.error === "string" ? result.error : "RSVP could not be saved");
+      }
       setStatus("sent");
+      setErrorMessage("");
+      setShowSavedDialog(true);
+      setUploadProgress(null);
       form.reset();
-    } catch {
+      setDelhiAttending("");
+      setReceptionAttending("");
+      uploadBatchId.current = null;
+      uploadedFiles.current.clear();
+      uploadedCount.current = 0;
+    } catch (error) {
       setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "We couldn’t save your RSVP just yet. Please try again shortly.");
     }
   }
 
@@ -641,18 +740,44 @@ function RSVP({ familyOrder }: { familyOrder: "groom" | "bride" }) {
           <form className={styles.rsvpForm} onSubmit={submit}>
             <label><span>Your name</span><input name="fullName" autoComplete="name" required maxLength={120} placeholder="Full name" /></label>
             <label><span>Phone number</span><input name="phone" type="tel" inputMode="tel" autoComplete="tel" required maxLength={32} placeholder="Your phone number" /></label>
-            <label><span>Will you be joining us?</span><select name="attending" required defaultValue=""><option value="" disabled>Select one</option><option value="yes">Joyfully accepts</option><option value="no">Regretfully declines</option></select></label>
-            <label><span>Number of guests attending, including you</span><input name="partySize" type="number" min="1" max="20" required placeholder="Number of guests" /></label>
+            {hasDelhiInvite && (
+              <>
+                <label><span>Will your party join us for the Delhi celebrations?</span><select name="delhiAttending" required value={delhiAttending} onChange={(event) => setDelhiAttending(event.target.value)}><option value="">Select one</option><option value="yes">Joyfully accepts</option><option value="no">Regretfully declines</option></select></label>
+                {delhiAttending === "yes" && <label><span>Delhi guests attending, including you</span><input name="delhiPartySize" type="number" min="1" max="20" required placeholder="Number of guests" /></label>}
+                {delhiAttending === "yes" && <>
+                  <label><span>ID cards for Delhi guests</span><input name="idCards" type="file" accept="image/jpeg,image/png,application/pdf" multiple required aria-describedby="id-upload-help" /></label>
+                  <span className={styles.privacyNote} id="id-upload-help">Upload at least one JPG, PNG, or PDF ID per Delhi guest, including you. Add as many files as you need; each file can be up to 3 MB. IDs are stored privately for Delhi event entry checks.</span>
+                  {uploadProgress && <div className={styles.uploadProgress} role="status" aria-live="polite">
+                    <span>{uploadProgress.fileName === "Saving your RSVP" ? "Saving your RSVP…" : `Uploading ID ${uploadProgress.index} of ${uploadProgress.total}: ${uploadProgress.fileName}`}</span>
+                    <progress max="100" value={uploadProgress.percent} aria-label={uploadProgress.fileName === "Saving your RSVP" ? "Saving your RSVP" : `Uploading ${uploadProgress.fileName}`} />
+                    {uploadProgress.fileName !== "Saving your RSVP" && <span>{uploadProgress.percent}%</span>}
+                  </div>}
+                </>}
+              </>
+            )}
+            {hasReceptionInvite && (
+              <>
+                <label><span>Will your party join us for the Reception in Pune?</span><select name="receptionAttending" required value={receptionAttending} onChange={(event) => setReceptionAttending(event.target.value)}><option value="">Select one</option><option value="yes">Joyfully accepts</option><option value="no">Regretfully declines</option></select></label>
+                {receptionAttending === "yes" && <label><span>Pune Reception guests attending, including you</span><input name="receptionPartySize" type="number" min="1" max="20" required placeholder="Number of guests" /></label>}
+              </>
+            )}
             <label><span>Wishes for the couple <em>(optional)</em></span><textarea name="wishes" rows={3} maxLength={1200} placeholder="Share a wish for Kush & Sanya" /></label>
             <label className={styles.trapField} aria-hidden="true">Leave this field empty<input name="website" tabIndex={-1} autoComplete="off" /></label>
             <button type="submit" disabled={status === "sending"}>{status === "sending" ? "Sending…" : "Send your RSVP"}<span aria-hidden="true">✧</span></button>
             <span className={styles.privacyNote}>Your RSVP is shared with the hosts for planning.</span>
-            {status === "sent" && <span className={styles.success} role="status">Thank you. Your RSVP has been received.</span>}
-            {status === "error" && <span className={styles.error} role="alert">We couldn’t save your RSVP just yet. Please try again shortly.</span>}
+            {status === "error" && <span className={styles.error} role="alert">{errorMessage || "We couldn’t save your RSVP just yet. Please try again shortly."}</span>}
           </form>
           <a className={styles.returnLink} href="#top">Return to the invitation ↑</a>
         </div>
       </div>
+      {showSavedDialog && <div className={styles.savedDialogBackdrop} role="presentation" onClick={() => setShowSavedDialog(false)}>
+        <div className={styles.savedDialog} role="dialog" aria-modal="true" aria-labelledby="rsvp-saved-title" onClick={(event) => event.stopPropagation()}>
+          <span className={styles.chapterKicker}>Thank you</span>
+          <h3 id="rsvp-saved-title">Your RSVP is saved</h3>
+          <p>We’ve received your response and shared it with the hosts.</p>
+          <button type="button" onClick={() => setShowSavedDialog(false)}>Done</button>
+        </div>
+      </div>}
     </section>
   );
 }
@@ -845,7 +970,7 @@ export default function Version16Experience({ invitation }: { invitation: Versio
           </div>
         </div>
       </section>
-      {invitation.familyOrder !== "bride" && <RSVP familyOrder={invitation.familyOrder} />}
+      {invitation.familyOrder !== "bride" && <RSVP familyOrder={invitation.familyOrder} eventIds={invitation.eventIds} inviteCode={invitation.inviteCode} />}
       <footer className={styles.footer}>
         {invitation.familyInvite
           ? `With love, ${invitation.familyOrder === "bride" ? "Gupta" : "Teppalwar"} family`

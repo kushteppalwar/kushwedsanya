@@ -496,6 +496,38 @@
 .mapLink span { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .mapLink svg { width: 18px; height: 18px; flex: 0 0 18px; }
 .mapLink:hover span { text-decoration-thickness: 2px; }
+.mapLinkProminent {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 2px;
+  line-height: 1.25;
+}
+.mapLinkProminent .mapVenue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #fff2d2;
+  font-size: clamp(1.2rem, 5.4vw, 1.42rem);
+  font-weight: 700;
+  text-wrap: balance;
+}
+.mapLinkProminent .mapAddress {
+  max-width: 31ch;
+  color: #fff0c8;
+  font-size: clamp(1rem, 4.3vw, 1.1rem);
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+.mapLinkProminent .mapDirections {
+  color: #ffe2a4;
+  font-size: .88rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
 
 /* Dress code sits under the main text, on the photo too — no plate anymore. */
 .dressPlate {

@@ -33,6 +33,7 @@ type Celebration = {
   city: "Pune" | "New Delhi";
   dressCode: string[];
   lunch?: string;
+  address?: string;
   mapUrl: string;
 };
 
@@ -141,6 +142,7 @@ const allCelebrations: Celebration[] = [
     date: "Saturday, 28 November 2026",
     time: "7:30 pm",
     venue: "Swastik Banquet Lawns (Mayfield)",
+    address: "Nr Jupiter Hospital, Aundh - Baner Link Rd, Baner, Pune, 411069",
     city: "Pune",
     dressCode: ["Western attire"],
     mapUrl: "https://maps.app.goo.gl/iHYujWGfTm6Bc9KN9",
@@ -486,6 +488,9 @@ function EventScene({ event, familyOrder, familyInvite = false, navigationEnable
   const eventVenue = familyOrder === "bride" && event.venue === "The Ocean Pearl Gardenia"
     ? "The Ocean Pearl Gardenia, Chhatarpur"
     : event.venue;
+  const familyVenue = familyInvite && event.id === "reception"
+    ? "Kuber Banquet Lawns (Mayfield/Swastik)"
+    : eventVenue;
   const showDressCode = event.dressCode.length > 0 && (familyOrder !== "bride" || event.id === "haldi");
 
   useEffect(() => {
@@ -569,14 +574,15 @@ function EventScene({ event, familyOrder, familyInvite = false, navigationEnable
           <p className={styles.eventRoom}>
             {eventHall && <span>{familyInvite && event.id === "shadi" ? eventHall : `${event.hallType} · ${eventHall}`}<br /></span>}
             <a
-              className={styles.mapLink}
+              className={`${styles.mapLink} ${familyInvite ? styles.mapLinkProminent : ""}`}
               href={event.mapUrl}
               target="_blank"
               rel="noreferrer"
-              aria-label={`Open ${eventVenue} in maps`}
+              aria-label={`Open ${familyVenue} in maps`}
             >
-              <LocationIcon />
-              <span>{eventVenue}</span>
+              <span className={familyInvite ? styles.mapVenue : undefined}><LocationIcon />{familyVenue}</span>
+              {familyInvite && event.id === "reception" && event.address && <span className={styles.mapAddress}>{event.address}</span>}
+              {familyInvite && <span className={styles.mapDirections}>View map ↗</span>}
             </a>
           </p>
         </article>

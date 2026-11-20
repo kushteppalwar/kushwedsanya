@@ -142,7 +142,7 @@ const allCelebrations: Celebration[] = [
     date: "Saturday, 28 November 2026",
     time: "7:30 pm",
     venue: "Swastik Banquet Lawns (Mayfield)",
-    address: "Nr Jupiter Hospital, Aundh - Baner Link Rd, Baner, Pune, 411069",
+    address: "Nr Jupiter Hospital, Aundh - Baner Link Road, Baner, Pune",
     city: "Pune",
     dressCode: ["Western attire"],
     mapUrl: "https://maps.app.goo.gl/iHYujWGfTm6Bc9KN9",
